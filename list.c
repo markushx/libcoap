@@ -82,7 +82,9 @@ coap_list_t *
 coap_new_listnode(void *data, void (*delete)(void *) ) {
   coap_list_t *node = coap_malloc( sizeof(coap_list_t) );
   if ( ! node ) {
+#ifndef IDENT_APPNAME
     perror ("coap_new_listnode: malloc");
+#endif
     return NULL;
   }
 

@@ -19,17 +19,23 @@
 
 #include <ctype.h>
 #include <stdio.h>
+#ifndef IDENT_APPNAME
 #include <time.h>
 #include <unistd.h>
+#endif
 #include <sys/types.h>
+#ifndef IDENT_APPNAME
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 
 #include "debug.h"
 #include "mem.h"
 #include "str.h"
+#ifndef IDENT_APPNAME
 #include "subscribe.h"
+#endif
 #include "net.h"
 
 #define options_start(p) ((coap_opt_t *) ( (unsigned char *)p->hdr + sizeof ( coap_hdr_t ) ))
@@ -47,6 +53,7 @@
  ** some functions for debugging
  ************************************************************************/
 
+#ifndef IDENT_APPNAME
 void 
 for_each_option(coap_pdu_t *pdu, 
 		void (*f)(coap_opt_t *, unsigned char, unsigned int, const unsigned char *) ) {
@@ -127,6 +134,7 @@ coap_show_pdu( coap_pdu_t *pdu ) {
   printf("\n");
   fflush(stdout);
 }
+#endif
 
 /************************************************************************/
 
@@ -188,7 +196,9 @@ coap_queue_t *
 coap_new_node() {
   coap_queue_t *node = coap_malloc ( sizeof *node );
   if ( ! node ) {
+#ifndef IDENT_APPNAME
     perror ("coap_new_node: malloc");
+#endif
     return NULL;
   }
 
@@ -217,6 +227,7 @@ coap_pop_next( coap_context_t *context ) {
   return next;
 }
 
+#ifndef IDENT_APPNAME
 coap_context_t *
 coap_new_context(in_port_t port) {
   coap_context_t *c = coap_malloc( sizeof( coap_context_t ) );
@@ -284,7 +295,9 @@ coap_free_context( coap_context_t *context ) {
   close( context->sockfd );
   coap_free( context );
 }
+#endif
 
+#ifndef IDENT_APPNAME
 /* releases space allocated by PDU if free_pdu is set */
 coap_tid_t
 coap_send_impl( coap_context_t *context, const struct sockaddr_in6 *dst, coap_pdu_t *pdu,
@@ -379,15 +392,17 @@ coap_retransmit( coap_context_t *context, coap_queue_t *node ) {
   coap_delete_node( node );
   return COAP_INVALID_TID;
 }
+#endif
 
 int
-_order_transaction_id( coap_queue_t *lhs, coap_queue_t *rhs ) {
+order_transaction_id( coap_queue_t *lhs, coap_queue_t *rhs ) {
   return ( lhs && rhs && lhs->pdu && rhs->pdu &&
 	   ( lhs->pdu->hdr->id < lhs->pdu->hdr->id ) ) 
     ? -1 
     : 1;
 }  
 
+#ifndef IDENT_APPNAME
 int
 coap_read( coap_context_t *ctx ) {
   static char buf[COAP_MAX_PDU_SIZE];
@@ -409,9 +424,16 @@ coap_read( coap_context_t *ctx ) {
     return -1;
   }
 
-  if ( bytes_read < sizeof(coap_hdr_t) || ((coap_hdr_t *)buf)->version != COAP_DEFAULT_VERSION ) {
+  if ( bytes_read < sizeof(coap_hdr_t)) {
 #ifndef NDEBUG
-    fprintf(stderr, "coap_read: discarded invalid frame\n" ); 
+    fprintf(stderr, "coap_read: discarded invalid frame (too small)\n" );
+#endif
+    return -1;
+  }
+
+  if (((coap_hdr_t *)buf)->version != COAP_DEFAULT_VERSION ) {
+#ifndef NDEBUG
+    fprintf(stderr, "coap_read: discarded invalid frame (wrong version 0x%x)\n", ((coap_hdr_t *)buf)->version );
 #endif
     return -1;
   }
@@ -442,7 +464,7 @@ coap_read( coap_context_t *ctx ) {
     node->pdu->data = (unsigned char *)opt;
 
   /* and add new node to receive queue */
-  coap_insert_node( &ctx->recvqueue, node, _order_transaction_id );
+  coap_insert_node( &ctx->recvqueue, node, order_transaction_id );
   
 #ifndef NDEBUG
   if ( inet_ntop(src.sin6_family, &src.sin6_addr, addr, INET6_ADDRSTRLEN) == 0 ) {
@@ -455,6 +477,7 @@ coap_read( coap_context_t *ctx ) {
 
   return 0;
 }
+#endif
 
 int
 coap_remove_transaction( coap_queue_t **queue, coap_tid_t id ) {
@@ -469,7 +492,9 @@ coap_remove_transaction( coap_queue_t **queue, coap_tid_t id ) {
   if ( id == q->pdu->hdr->id ) { /* found transaction */
     *queue = q->next;
     coap_delete_node( q );
+#ifndef NDEBUG
     debug("*** removed transaction %u\n", ntohs(id));
+#endif
     return 1;
   }
 
@@ -482,7 +507,9 @@ coap_remove_transaction( coap_queue_t **queue, coap_tid_t id ) {
   if ( q ) {			/* found transaction */
     p->next = q->next;
     coap_delete_node( q );
+#ifndef NDEBUG
     debug("*** removed transaction %u\n", ntohs(id));
+#endif
     return 1;    
   }
 
@@ -530,13 +557,17 @@ coap_dispatch( coap_context_t *context ) {
        * not only the transaction but also the subscriptions we might
        * have. */
 
+#ifndef NDEBUG
       fprintf(stderr, "* got RST for transaction %u\n", ntohs(node->pdu->hdr->id) );
+#endif
       sent = coap_find_transaction(context->sendqueue, node->pdu->hdr->id);
       if (sent && coap_get_request_uri(sent->pdu, &uri)) { 
 	/* The easy way: we still have the transaction that has caused
 	* the trouble.*/
 	
+#ifndef IDENT_APPNAME
 	coap_delete_subscription(context, coap_uri_hash(&uri), &node->remote);
+#endif
       } else {
 	/* ?? */
       }
@@ -554,6 +585,7 @@ coap_dispatch( coap_context_t *context ) {
 
       if ( type != 0 ) {	/* send error response if unknown */
 	response = coap_new_pdu();
+#ifndef IDENT_APPNAME   // FIXME: mab
 	if (response) {
 	  response->hdr->type = COAP_MESSAGE_RST;
 	  response->hdr->code = COAP_RESPONSE_X_242;
@@ -570,6 +602,7 @@ coap_dispatch( coap_context_t *context ) {
 	    coap_delete_pdu(response);
 	  }
 	}	  
+#endif
 
 	goto cleanup;
       }

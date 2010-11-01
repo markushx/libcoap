@@ -20,10 +20,12 @@
 #ifndef _COAP_ENCODE_H_
 #define _COAP_ENCODE_H_
 
+#ifndef IDENT_APPNAME
 #if (BSD >= 199103)
 # include <string.h>
 #else
 # include <strings.h>
+#endif
 #endif
 
 #define N 8

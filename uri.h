@@ -33,7 +33,7 @@ typedef struct {
  * URI parts that are not available will be set to NULL in uri. The function 
  * returns -1 on error, 0 on success. Note that the passed str will be altered.
  */
-int coap_split_uri(unsigned char *str, coap_uri_t *uri);
+int coap_split_uri(unsigned char *str_var, coap_uri_t *uri);
 
 /**
  * Creates a new coap_uri_t object from the specified URI. Returns the new

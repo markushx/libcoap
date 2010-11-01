@@ -20,7 +20,9 @@
 
 #include <stdio.h>
 #include <limits.h>
+#ifndef IDENT_APPNAME
 #include <arpa/inet.h>
+#endif
 
 #include "mem.h"
 #include "encode.h"
@@ -29,6 +31,7 @@
 
 #define HMASK (ULONG_MAX >> 1)
 
+#ifndef IDENT_APPNAME
 void
 notify(coap_context_t *context, coap_resource_t *res, 
        coap_subscription_t *sub, unsigned int duration, int code) {
@@ -90,11 +93,16 @@ notify(coap_context_t *context, coap_resource_t *res,
 #endif
   if ( pdu && coap_send_confirmed(context, 
 		  &sub->subscriber, pdu ) == COAP_INVALID_TID ) {
+#ifndef NDEBUG
     debug("coap_check_resource_list: error sending notification\n");
+#endif
     coap_delete_pdu(pdu);
   }  
 }
 
+#endif
+
+#ifndef IDENT_APPNAME
 void 
 coap_check_resource_list(coap_context_t *context) {
   coap_list_t *res, *sub;
@@ -123,6 +131,7 @@ coap_check_resource_list(coap_context_t *context) {
     }
   }
 }
+#endif
 
 coap_resource_t *
 coap_get_resource_from_key(coap_context_t *ctx, coap_key_t key) {
@@ -144,6 +153,7 @@ coap_get_resource(coap_context_t *ctx, coap_uri_t *uri) {
   return uri ? coap_get_resource_from_key(ctx, coap_uri_hash(uri)) : NULL;
 }
 
+#ifndef IDENT_APPNAME
 void 
 coap_check_subscriptions(coap_context_t *context) {
   time_t now;
@@ -176,6 +186,7 @@ coap_check_subscriptions(coap_context_t *context) {
     node = context->subscriptions;
   }
 }
+#endif
 
 void
 coap_free_resource(void *res) {
@@ -250,7 +261,9 @@ coap_delete_resource(coap_context_t *context, coap_key_t key) {
   for (prev = NULL, node = context->resources; node; 
        prev = node, node = node->next) {
     if (coap_uri_hash(COAP_RESOURCE(node)->uri) == key) {
+#ifndef NDEBUG
       debug("removed key %lu (%s)\n",key,COAP_RESOURCE(node)->uri->path.s);
+#endif
       if (!prev)
 	context->resources = node->next;
       else
@@ -263,6 +276,7 @@ coap_delete_resource(coap_context_t *context, coap_key_t key) {
   return 0;  
 }
 
+#ifndef IDENT_APPNAME
 coap_subscription_t *
 coap_new_subscription(coap_context_t *context, const coap_uri_t *resource,
 		      const struct sockaddr_in6 *subscriber, time_t expiry) {
@@ -396,3 +410,4 @@ coap_delete_subscription(coap_context_t *context,
   }
   return 0;  
 }
+#endif
