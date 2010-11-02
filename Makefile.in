@@ -65,6 +65,10 @@ $(LIB):	$(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^ 
 	ranlib $@
 
+swig:
+	mkdir -p de/tzi/coap/
+	swig -java -package de.tzi.coap -outdir de/tzi/coap/ encode.i
+
 clean:
 	@rm -f $(PROGRAM) main.o $(LIB) $(OBJECTS)
 	for dir in $(SUBDIRS); do \
