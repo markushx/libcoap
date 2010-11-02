@@ -32,6 +32,9 @@ package = @PACKAGE_TARNAME@-@PACKAGE_VERSION@
 SOURCES:= pdu.c net.c debug.c encode.c uri.c list.c subscribe.c str.c
 OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
 HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h list.h mem.h subscribe.h str.h 
+INTERFACES:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i
+JAVA:= $(patsubst %.i, %.java, $(INTERFACES))
+
 #CFLAGS:=-g -Wall -ansi -pedantic
 CFLAGS:=-Wall -ansi -pedantic @CFLAGS@
 DISTDIR=$(top_builddir)/$(package)
@@ -62,13 +65,20 @@ dirs:	$(SUBDIRS)
 	done
 
 $(LIB):	$(OBJECTS)
-	$(AR) $(ARFLAGS) $@ $^ 
+	$(AR) $(ARFLAGS) $@ $^
 	ranlib $@
 
 swig:
 	mkdir -p de/tzi/coap/
-	swig -java -package de.tzi.coap -outdir de/tzi/coap/ encode.i
-	swig -java -package de.tzi.coap -outdir de/tzi/coap/ uri.i
+
+	for ifc in $(INTERFACES); do \
+		swig -java -package de.tzi.coap -outdir de/tzi/coap/ $$ifc; \
+	done
+
+	for jv in $(JAVA); do \
+		javac de/tzi/coap/$$jv; \
+	done
+# coap.i, config.i, mem.i needed as well?
 
 clean:
 	@rm -f $(PROGRAM) main.o $(LIB) $(OBJECTS)
