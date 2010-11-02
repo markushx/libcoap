@@ -68,6 +68,7 @@ $(LIB):	$(OBJECTS)
 swig:
 	mkdir -p de/tzi/coap/
 	swig -java -package de.tzi.coap -outdir de/tzi/coap/ encode.i
+	swig -java -package de.tzi.coap -outdir de/tzi/coap/ uri.i
 
 clean:
 	@rm -f $(PROGRAM) main.o $(LIB) $(OBJECTS)
