@@ -69,6 +69,7 @@ typedef struct {
 #endif
 
   void ( *msg_handler )( void *, coap_queue_t *, void *);
+   coap_queue_t *asynresqueue; /* FIXME to keep the details of asyn delayed responses */
 } coap_context_t;
 
 typedef void (*coap_message_handler_t)( coap_context_t  *, coap_queue_t *, void *);
