@@ -585,7 +585,8 @@ coap_dispatch( coap_context_t *context ) {
 
       if ( type != 0 ) {	/* send error response if unknown */
 	response = coap_new_pdu();
-#ifndef IDENT_APPNAME   // FIXME: mab
+#ifndef IDENT_APPNAME
+	/* FIXME: mab */
 	if (response) {
 	  response->hdr->type = COAP_MESSAGE_RST;
 	  response->hdr->code = COAP_RESPONSE_X_242;

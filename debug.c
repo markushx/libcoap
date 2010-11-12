@@ -23,7 +23,7 @@
 
 #include "debug.h"
 
-#ifdef IDENT_APPNAME
+#ifndef IDENT_APPNAME
 void debug(char *format, ...) {
   static char timebuf[32];
   struct tm *tmp;
