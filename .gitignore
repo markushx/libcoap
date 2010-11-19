@@ -9,3 +9,6 @@ Doxyfile
 *.o
 *.a
 *.so
+doc/doxygen.out
+examples/coap.out
+examples/filestorage
