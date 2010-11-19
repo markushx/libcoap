@@ -39,6 +39,7 @@ typedef struct {
   unsigned char mediatype;	/* media type for resource representation */
   unsigned int dirty:1;		/* set to 1 if resource has changed */
   unsigned int writable:1;	/* set to 1 if resource can be changed using PUT */
+  unsigned int splitphase:1;	/* set to 1 if resource is split-phase async */
 
   /* cache-control */
   unsigned char etag[4];        /* version identifier for this resource 
