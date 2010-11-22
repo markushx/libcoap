@@ -31,25 +31,25 @@
 #endif
 
 int
-coap_split_uri(unsigned char *str, coap_uri_t *uri) {
+coap_split_uri(unsigned char *str_var, coap_uri_t *uri) {
   unsigned char *p;
 
-  if ( !str || !uri )
+  if ( !str_var || !uri )
     return -1;
 
   memset( uri, 0, sizeof(coap_uri_t) );
 
   /* find scheme */
-  p = str;
+  p = str_var;
   while ( isalnum(*p) )
     ++p;
 
   if ( *p != ':' ) {		/* no scheme, reset p */
-    p = str;
+    p = str_var;
   } else {			/* scheme found, check if it is "coap" */
-    if (memcmp(str, COAP_DEFAULT_SCHEME, 
-	       MIN(p - str, sizeof(COAP_DEFAULT_SCHEME) - 1)) != 0) {
-      debug("unknown URI scheme '%s'\n",str);
+    if (memcmp(str_var, COAP_DEFAULT_SCHEME, 
+	       MIN(p - str_var, sizeof(COAP_DEFAULT_SCHEME) - 1)) != 0) {
+      debug("unknown URI scheme '%s'\n",str_var);
       return -1;
     }
     *p++ = '\0';
@@ -59,13 +59,13 @@ coap_split_uri(unsigned char *str, coap_uri_t *uri) {
       p += 2;
       uri->na.s = p;
 
-      /* skip NA and port so that p and str finally point to path */
+      /* skip NA and port so that p and str_var finally point to path */
       while ( *p && *p != '/' && *p != '?') 
 	++p;
       
       uri->na.length = p - uri->na.s;
 
-      str = p;
+      str_var = p;
 #if 0
       /* split server address and port */
       if ( *uri->na == '[' ) {	/* IPv6 address reference */
@@ -86,30 +86,30 @@ coap_split_uri(unsigned char *str, coap_uri_t *uri) {
       }
 #endif
     } else 
-      str = p;			
+      str_var = p;			
 
-    /* str now points to the path or query if path is empty*/
+    /* str_var now points to the path or query if path is empty*/
   }
 
   /* split path and query */
   
-  if ( *str == '\0' )
+  if ( *str_var == '\0' )
     return 0;
 
-  if (*str != '?') {
-    if (*str == '/')		/* skip leading '/' */
-      *str++ = '\0';
-    uri->path.s = str;
+  if (*str_var != '?') {
+    if (*str_var == '/')		/* skip leading '/' */
+      *str_var++ = '\0';
+    uri->path.s = str_var;
   }
 
-  while (*str && *str != '?')
-    str++;
+  while (*str_var && *str_var != '?')
+    str_var++;
 
-  if (*str == '?') {
-    *str++ = '\0';
+  if (*str_var == '?') {
+    *str_var++ = '\0';
 
-    if (*str) {
-      uri->query.s = str;
+    if (*str_var) {
+      uri->query.s = str_var;
       uri->query.length = strlen((char *)uri->query.s);
     }
   } 
