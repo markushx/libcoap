@@ -15,4 +15,4 @@ configure
 de/
 Doxyfile
 *_wrap.c
-
+doc/doxygen.out

@@ -21,16 +21,23 @@
 #define _COAP_NET_H_
 
 #include <stdlib.h>
+#ifdef IDENT_APPNAME
+#include <lib6lowpan.h>
+typedef uint16_t ssize_t;
+#else
 #include <string.h>
 #include <time.h>
 #include <netinet/in.h>
+#endif
 
 #include "pdu.h"
 
 struct coap_listnode {
   struct coap_listnode *next;
 
+#ifndef IDENT_APPNAME
   time_t t;			/* when to send PDU for the next time */
+#endif
   unsigned char retransmit_cnt;	/* retransmission counter, will be removed when zero */
   
   struct sockaddr_in6 remote;	/* remote address */
@@ -57,9 +64,12 @@ coap_queue_t *coap_new_node();
 typedef struct {
   coap_list_t *resources, *subscriptions; /* FIXME: make these hash tables */
   coap_queue_t *sendqueue, *recvqueue; /* FIXME make these coap_list_t */
+#ifndef IDENT_APPNAME
   int sockfd;			/* send/receive socket */
+#endif
 
   void ( *msg_handler )( void *, coap_queue_t *, void *);
+   coap_queue_t *asynresqueue; /* FIXME to keep the details of asyn delayed responses */
 } coap_context_t;
 
 typedef void (*coap_message_handler_t)( coap_context_t  *, coap_queue_t *, void *);
@@ -68,6 +78,7 @@ typedef void (*coap_message_handler_t)( coap_context_t  *, coap_queue_t *, void 
  * Registers a new message handler that is called whenever a new PDU
  * was received. Note that the transactions are handled on the lower
  * layer previously to stop retransmissions, e.g. */
+#ifndef IDENT_APPNAME
 void coap_register_message_handler( coap_context_t *context, coap_message_handler_t handler);
 
 /** 
@@ -88,7 +99,6 @@ coap_context_t *coap_new_context(in_port_t port);
 
 /* CoAP stack context must be released with coap_free_context() */
 void coap_free_context( coap_context_t *context );
-
 
 /**
  * Sends a confirmed CoAP message to given destination. The memory that is allocated by pdu will
@@ -112,6 +122,7 @@ coap_tid_t coap_retransmit( coap_context_t *context, coap_queue_t *node );
  * object.
  */
 int coap_read( coap_context_t *context );
+#endif
 
 /** Removes transaction with specified id from given queue. Returns 0 if not found, 1 otherwise. */
 int coap_remove_transaction( coap_queue_t **queue, coap_tid_t id );
@@ -125,9 +136,12 @@ int coap_remove_transaction( coap_queue_t **queue, coap_tid_t id );
 coap_queue_t *coap_find_transaction(coap_queue_t *queue, coap_tid_t id);
 
 /** Dispatches the PDUs from the receive queue in given context. */
+#ifndef IDENT_APPNAME
 void coap_dispatch( coap_context_t *context );
+#endif
 
 /** Returns 1 if there are no messages to send or to dispatch in the context's queues. */
 int coap_can_exit( coap_context_t *context );
 
+int order_transaction_id( coap_queue_t *lhs, coap_queue_t *rhs );
 #endif /* _COAP_NET_H_ */

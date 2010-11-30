@@ -30,7 +30,7 @@
 #define COAP_DEFAULT_MAX_RETRANSMIT    5 /* max number of retransmissions */
 #define COAP_DEFAULT_PORT          61616 /* CoAP default UDP port */
 #define COAP_DEFAULT_MAX_AGE          60 /* default maximum object lifetime in seconds */
-#define COAP_MAX_PDU_SIZE           1400 /* maximum size of a CoAP PDU */
+#define COAP_MAX_PDU_SIZE           700 /* maximum size of a CoAP PDU */
 
 #define COAP_DEFAULT_VERSION           1 /* version of CoAP supported */
 #define COAP_DEFAULT_SCHEME        "coap" /* the default scheme for CoAP URIs */
