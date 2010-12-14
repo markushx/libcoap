@@ -85,7 +85,7 @@ void coap_register_message_handler( coap_context_t *context, coap_message_handle
  * Registers a new handler function that is called when a RST message
  * has been received.
  */
-void coap_register_error_handler( coap_context_t *context, coap_message_handler_t handler);
+/*void coap_register_error_handler( coap_context_t *context, coap_message_handler_t handler);*/
 
 /* Returns the next pdu to send without removing from sendqeue. */
 coap_queue_t *coap_peek_next( coap_context_t *context );

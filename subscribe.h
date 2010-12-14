@@ -40,7 +40,8 @@ typedef struct {
   unsigned int dirty:1;		/* set to 1 if resource has changed */
   unsigned int writable:1;	/* set to 1 if resource can be changed using PUT */
   unsigned int splitphase:1;	/* set to 1 if resource is split-phase async */
-
+  unsigned int immediately;     /* set to 1 if data is send immediately */
+  
   /* cache-control */
   unsigned char etag[4];        /* version identifier for this resource 
 				 * (zero terminated, first byte is zero if not set). */
@@ -61,7 +62,7 @@ typedef struct {
    * The return value indicates the result code that should be used in a response to
    * this function.
    */
-  int (*data)(coap_uri_t *uri, unsigned char *mediatype, unsigned int offset, unsigned char *buf, unsigned int *buflen, int *finished);
+  int (*data)(coap_uri_t *uri, unsigned char *mediatype, unsigned int offset, unsigned char *buf, unsigned int *buflen, int *finished, unsigned int method);
 } coap_resource_t;
 
 typedef struct {

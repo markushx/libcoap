@@ -41,10 +41,26 @@ DISTDIR=$(top_builddir)/$(package)
 SUBDIRS:=examples doc
 FILES:=Makefile.in configure configure.in config.h.in $(SOURCES) $(HEADERS)
 LIB:=libcoap.a
+SOLIB:=libcoap.so
 LDFLAGS:=@LIBS@
 ARFLAGS:=cru
 examples:=examples
 doc:=doc
+
+########java############
+JFLAGS = -g
+JC = javac
+
+.SUFFIXES: .java .class
+.java.class:
+	$(JC) $(JFLAGS) $*.java
+
+javatest:
+	javac de/tzi/coap/CoapTest.java de/tzi/coap/Constants.java 
+	java de/tzi/coap/CoapTest
+
+
+#########
 
 
 .PHONY: all dirs clean distclean .gitignore doc
@@ -52,7 +68,7 @@ doc:=doc
 .SUFFIXES:
 .SUFFIXES:      .c .o
 
-all:	$(LIB) dirs
+all:	$(LIB) $(SOLIB) dirs
 
 check:	
 	echo DISTDIR: $(DISTDIR)
@@ -67,6 +83,11 @@ dirs:	$(SUBDIRS)
 $(LIB):	$(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^
 	ranlib $@
+
+$(SOLIB):	$(OBJECTS)
+	gcc -shared -Wl,-soname,$@ -o $@ $^
+
+
 
 swig:
 	mkdir -p de/tzi/coap/
