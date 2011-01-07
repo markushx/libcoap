@@ -23,6 +23,7 @@
 
 #include "debug.h"
 
+#ifndef IDENT_APPNAME
 void debug(char *format, ...) {
   static char timebuf[32];
   struct tm *tmp;
@@ -40,3 +41,6 @@ void debug(char *format, ...) {
   va_end(ap);
   fflush(stdout);
 }
+#else
+#define debug(fmt, args ...) dbg(fmt, ## args)
+#endif

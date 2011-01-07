@@ -25,7 +25,9 @@
 str *coap_new_string(size_t size) {
   str *s = coap_malloc(sizeof(str) + size + 1);
   if ( !s ) {
+#ifndef NDEBUG
     perror("coap_new_string: malloc");
+#endif
     return NULL;
   }
     

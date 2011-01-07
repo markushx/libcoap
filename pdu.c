@@ -20,7 +20,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef IDENT_APPNAME
+#include <nwbyte.h>
+#else
 #include <arpa/inet.h>
+#endif
 
 #include "debug.h"
 #include "mem.h"
@@ -31,7 +35,9 @@ coap_pdu_t *
 coap_new_pdu() {
   coap_pdu_t *pdu = coap_malloc( sizeof(coap_pdu_t) + COAP_MAX_PDU_SIZE );
   if (!pdu) {
+#ifndef IDENT_APPNAME
     perror("new_pdu: malloc");
+#endif
     return NULL;
   }
   
@@ -160,8 +166,10 @@ coap_check_critical(coap_pdu_t *pdu, coap_opt_t **option) {
       case COAP_OPTION_URI_QUERY :
 	break;
       default:			/* return first unknown critical option */
+#ifndef NDEBUG
 	fprintf(stderr, 
 		"coap_check_critical: unknown critical option %d\n", opt_code);
+#endif
 	return opt_code;
       }
     }

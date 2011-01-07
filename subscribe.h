@@ -39,7 +39,9 @@ typedef struct {
   unsigned char mediatype;	/* media type for resource representation */
   unsigned int dirty:1;		/* set to 1 if resource has changed */
   unsigned int writable:1;	/* set to 1 if resource can be changed using PUT */
-
+  unsigned int splitphase:1;	/* set to 1 if resource is split-phase async */
+  unsigned int immediately;     /* set to 1 if data is send immediately */
+  
   /* cache-control */
   unsigned char etag[4];        /* version identifier for this resource 
 				 * (zero terminated, first byte is zero if not set). */
@@ -60,13 +62,15 @@ typedef struct {
    * The return value indicates the result code that should be used in a response to
    * this function.
    */
-  int (*data)(coap_uri_t *uri, unsigned char *mediatype, unsigned int offset, unsigned char *buf, unsigned int *buflen, int *finished);
+  int (*data)(coap_uri_t *uri, unsigned char *mediatype, unsigned int offset, unsigned char *buf, unsigned int *buflen, int *finished, unsigned int method);
 } coap_resource_t;
 
 typedef struct {
   coap_key_t resource;		/* hash key for subscribed resource */
+#ifndef IDENT_APPNAME
   time_t expires;		/* expiry time of subscription */
 
+#endif
   struct sockaddr_in6 subscriber; /* subscriber's address */
   str token;			  /* subscription token */
 } coap_subscription_t;
@@ -96,10 +100,12 @@ int coap_delete_resource(coap_context_t *context, coap_key_t key);
 /**
  * Creates a new subscription object filled with the given data. The storage
  * allocated for this object must be released using coap_free(). */
+#ifndef IDENT_APPNAME
 coap_subscription_t *coap_new_subscription(coap_context_t *context, 
 					   const coap_uri_t *resource,
 					   const struct sockaddr_in6 *subscriber,
 					   time_t expiry);
+#endif
 
 /**
  * Adds the given subsription object to the observer list. 
