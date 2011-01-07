@@ -32,6 +32,8 @@ package = @PACKAGE_TARNAME@-@PACKAGE_VERSION@
 SOURCES:= pdu.c net.c debug.c encode.c uri.c list.c subscribe.c str.c
 OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
 HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h list.h mem.h subscribe.h str.h
+WRAPPER:=$(patsubst %.c, %_wrap.c, $(SOURCES))
+
 INTERFACES:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i
 JAVA:= $(patsubst %.i, %.java, $(INTERFACES))
 
@@ -62,7 +64,6 @@ javatest:
 
 #########
 
-
 .PHONY: all dirs clean distclean .gitignore doc
 
 .SUFFIXES:
@@ -84,10 +85,8 @@ $(LIB):	$(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^
 	ranlib $@
 
-$(SOLIB):	$(OBJECTS)
-	gcc -shared -Wl,-soname,$@ -o $@ $^
-
-
+$(SOLIB):	$(OBJECTS) $(WRAPPER)
+	gcc -I/usr/lib/jvm/java-6-sun-1.6.0.22/include/ -I/usr/lib/jvm/java-6-sun-1.6.0.22/include/linux/ -shared -Wl,-soname,$@ -o $@ $^
 
 swig:
 	mkdir -p de/tzi/coap/jni/
@@ -102,7 +101,7 @@ swig:
 # coap.i, config.i, mem.i needed as well?
 
 clean:
-	@rm -f $(PROGRAM) main.o $(LIB) $(OBJECTS)
+	@rm -f $(PROGRAM) main.o $(LIB) $(SOLIB) $(OBJECTS)
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean ; \
 	done
