@@ -12,5 +12,4 @@ Doxyfile
 doc/doxygen.out
 examples/coap.out
 examples/filestorage
-de/
 *_wrap.c

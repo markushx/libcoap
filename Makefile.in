@@ -31,7 +31,7 @@ package = @PACKAGE_TARNAME@-@PACKAGE_VERSION@
 # files and flags
 SOURCES:= pdu.c net.c debug.c encode.c uri.c list.c subscribe.c str.c
 OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
-HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h list.h mem.h subscribe.h str.h 
+HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h list.h mem.h subscribe.h str.h
 INTERFACES:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i
 JAVA:= $(patsubst %.i, %.java, $(INTERFACES))
 
@@ -56,7 +56,7 @@ JC = javac
 	$(JC) $(JFLAGS) $*.java
 
 javatest:
-	javac de/tzi/coap/CoapTest.java de/tzi/coap/Constants.java 
+	javac de/tzi/coap/CoapTest.java de/tzi/coap/Constants.java
 	java de/tzi/coap/CoapTest
 
 
@@ -70,7 +70,7 @@ javatest:
 
 all:	$(LIB) $(SOLIB) dirs
 
-check:	
+check:
 	echo DISTDIR: $(DISTDIR)
 	echo top_builddir: $(top_builddir)
 	$(MAKE) -C examples check
@@ -90,14 +90,14 @@ $(SOLIB):	$(OBJECTS)
 
 
 swig:
-	mkdir -p de/tzi/coap/
+	mkdir -p de/tzi/coap/jni/
 
 	for ifc in $(INTERFACES); do \
-		swig -java -package de.tzi.coap -outdir de/tzi/coap/ $$ifc; \
+		swig -java -package de.tzi.coap.jni -outdir de/tzi/coap/jni/ $$ifc; \
 	done
 
 	for jv in $(JAVA); do \
-		javac de/tzi/coap/$$jv; \
+		javac de/tzi/coap/jni/$$jv; \
 	done
 # coap.i, config.i, mem.i needed as well?
 
@@ -107,7 +107,7 @@ clean:
 		$(MAKE) -C $$dir clean ; \
 	done
 
-doc:	
+doc:
 	$(MAKE) -C doc
 
 distclean:	clean
