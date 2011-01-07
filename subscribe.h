@@ -62,7 +62,7 @@ typedef struct {
    * The return value indicates the result code that should be used in a response to
    * this function.
    */
-  int (*data)(coap_uri_t *uri, unsigned char *mediatype, unsigned int offset, unsigned char *buf, unsigned int *buflen, int *finished, unsigned int method);
+  int (*data)(coap_uri_t *uri, unsigned char *mediatype, unsigned int offset, unsigned char *buf, unsigned int *buflen, int *finished);
 } coap_resource_t;
 
 typedef struct {
