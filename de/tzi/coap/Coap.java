@@ -16,8 +16,7 @@ public class Coap {
 	public static int localport = COAP_DEFAULT_PORT; 
 	public static de.tzi.coap.jni.SWIGTYPE_p_coap_context_t ctx;
 	public static de.tzi.coap.jni.SWIGTYPE_p_coap_queue_t 	node;
-	public String sdata = "TEST_STRING_IN_JAVA";
-
+	public static String sdata = "TEST_STRING_IN_JAVA";
 
 	// Natives
 	//public native void JNIRegisterMessageHandler();
@@ -32,32 +31,19 @@ public class Coap {
 		System.out.println("Exit Java message_handler()");
     }
 
-
 	public static void main(String argv[]) throws Exception {
-		ctx = net.coap_new_context(port);
+    	
+    	//SWIG access
+		ctx  = net.coap_new_context(port);
 		node = net.coap_new_node();
-		//net.coap_register_message_handler(ctx, message_handler);
-				
+    	CoapSwig.JNIRegisterMessageHandler(sdata);		
+
 		//JNI access
     	//Coap c = new Coap();
     	//c.JNIRegisterMessageHandler();
-    	
-    	//SWIG access
-    	String data = "TEST_STRING_IN_JAVA";
-    	CoapSwig.JNIRegisterMessageHandler(data);		
 	
 		System.out.println("CTX in Java  = "+ctx);
 		System.out.println("NODE in Java = "+node);
 		System.out.println("Exit Java");
-    }
-    
-}	
-
-/*
-class coap_swig {
-  public static void jni_RegisterMessageHandler() {
-  	Coap c= new Coap();
-    c.JNIRegisterMessageHandler();
-  }
+    }   
 }
-*/

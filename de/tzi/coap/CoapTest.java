@@ -5,14 +5,10 @@ import de.tzi.coap.jni.encode;
 import de.tzi.coap.jni.net;
 //import de.tzi.coap.jni.pdu;
 
-//son
-//import sun.misc.Unsafe;
-//import java.lang.reflect.*;
 
 public class CoapTest {
     static {
 	System.loadLibrary("coap");			// coap lib
-	//System.loadLibrary("CoapTest");		// JNI lib
     }
 
 	public static int port 		= COAP_DEFAULT_PORT;
@@ -23,7 +19,13 @@ public class CoapTest {
 
 	// Natives
 	private native void JNIRegisterMessageHandler();
-    
+	
+	/*
+	public static void RegisterMessageHandler() {
+    	CoapTest c = new CoapTest();
+    	c.JNIRegisterMessageHandler();		
+	}
+    */
     public static void message_handler(	de.tzi.coap.jni.SWIGTYPE_p_coap_context_t ctx_obj,
 				       					de.tzi.coap.jni.SWIGTYPE_p_coap_queue_t node_obj,
 				       					String data  ) {

@@ -60,21 +60,21 @@ Java_de_tzi_coap_CoapTest_JNIRegisterMessageHandler (JNIEnv *env, jobject obj) {
 	printf("2. Get Objects from Java \n");
 	//context
 	jclass ctx_cls = (*env)->FindClass(env,"Lde/tzi/coap/jni/SWIGTYPE_p_coap_context_t;");
-	//if (ctx_cls!=NULL)		printf("CTX_CLS in C = %d \n", ctx_cls);
+	if (ctx_cls!=NULL)		printf("CTX_CLS in C = %d \n", ctx_cls);
 	jmethodID midCons1 = (*env)->GetMethodID(env, ctx_cls, "<init>", "()V");
 	jfieldID ctx_fid = (*env)->GetFieldID(env,ctx_cls,"swigCPtr","J");
-	//if (ctx_fid!=NULL) 		printf("CTX_FID in C = %d \n", ctx_fid);		
+	if (ctx_fid!=NULL) 		printf("CTX_FID in C = %d \n", ctx_fid);		
 	jlong ctx_ptr =(*env)->GetLongField(env, obj, ctx_fid);
-	//if (ctx_ptr!=NULL) 		printf("CTX_PTR in C = %ld \n", ctx_ptr);		
+	if (ctx_ptr!=NULL) 		printf("CTX_PTR in C = %ld \n", ctx_ptr);		
 	
 	// queue node
 	jclass node_cls = (*env)->FindClass(env,"Lde/tzi/coap/jni/SWIGTYPE_p_coap_queue_t;");
-	//if (node_cls!=NULL)		printf("NODE_CLS in C = %d \n", node_cls);
+	if (node_cls!=NULL)		printf("NODE_CLS in C = %d \n", node_cls);
 	jmethodID midCons2 = (*env)->GetMethodID(env, node_cls, "<init>", "()V");
 	jfieldID node_fid = (*env)->GetFieldID(env,node_cls,"swigCPtr","J");
-	//if (node_fid!=NULL) 		printf("NODE_FID in C = %d \n", node_fid);		
+	if (node_fid!=NULL) 		printf("NODE_FID in C = %d \n", node_fid);		
 	jlong node_ptr =(*env)->GetLongField(env, obj, node_fid);
-	//if (node_ptr!=NULL) 		printf("NODE_PTR in C = %d \n", node_ptr);		
+	if (node_ptr!=NULL) 		printf("NODE_PTR in C = %d \n", node_ptr);		
 
 	//data
 	cls = (*env)->GetObjectClass(env, obj);	

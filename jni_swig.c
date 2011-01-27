@@ -16,7 +16,6 @@ jobject jctx, jnode;
 jobject ctx_obj, node_obj;
 jstring data;
 coap_context_t *ctx;
-jobject cached_obj;
 
 /* JNI on Load, caching variables here */
 JNIEXPORT jint JNICALL 
@@ -69,8 +68,8 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIRegisterMessageHandler (JNIEnv *env, jobject
 	coap_message_handler_t handler;
 
 	printf("2. Get Objects from Java \n");
+	/* Get Object from Java: ctx, node and data 
 	cached_obj = obj;
-	/* Get Object from Java: ctx, node and data */
 	/* context */
 	ctx_cls = (*env)->FindClass(env,"Lde/tzi/coap/jni/SWIGTYPE_p_coap_context_t;");
 	midCons1 = (*env)->GetMethodID(env, ctx_cls, "<init>", "()V");

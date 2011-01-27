@@ -58,8 +58,8 @@ JC = javac
 	$(JC) $(JFLAGS) $*.java
 
 javatest:
-	javac de/tzi/coap/CoapTest.java de/tzi/coap/Constants.java
-	java de/tzi/coap/CoapTest
+	javac -cp . de/tzi/coap/CoapTest.java de/tzi/coap/Constants.java
+	java -cp . de/tzi/coap/CoapTest
 
 
 #########
@@ -86,7 +86,7 @@ $(LIB):	$(OBJECTS)
 	ranlib $@
 
 $(SOLIB):	$(OBJECTS) $(WRAPPER)
-	gcc -I/usr/lib/jvm/java-6-sun-1.6.0.22/include/ -I/usr/lib/jvm/java-6-sun-1.6.0.22/include/linux/ -shared -Wl,-soname,$@ -o $@ $^
+	gcc -I/usr/lib/jvm/java-6-sun/include/ -I/usr/lib/jvm/java-6-sun/include/linux/ -I/usr/lib/jvm/java-1.5.0-sun/include/ -I/usr/lib/jvm/java-1.5.0-sun/include/linux/ -shared -Wl,-soname,$@ -o $@ $^
 
 swig:
 	mkdir -p de/tzi/coap/jni/
@@ -95,9 +95,11 @@ swig:
 		swig -java -package de.tzi.coap.jni -outdir de/tzi/coap/jni/ $$ifc; \
 	done
 
-	for jv in $(JAVA); do \
-		javac de/tzi/coap/jni/$$jv; \
-	done
+	javac de/tzi/coap/jni/*.java; \
+
+#	for jv in $(JAVA); do \
+#		javac de/tzi/coap/jni/$$jv; \
+#	done
 # coap.i, config.i, mem.i needed as well?
 
 clean:
