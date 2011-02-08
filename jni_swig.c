@@ -1,12 +1,23 @@
 #include <jni.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <limits.h>
+#include <sys/select.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 
 #include "de_tzi_coap_Coap.h" 
 #include "coap.h"
 
+
 /* prototype */
 void message_handler_proxy(JNIEnv *env, jobject obj, jobject ctx, jobject node, jstring data);
-
+coap_pdu_t * make_pdu( unsigned int value, int type, int code, int id, char* data);
 
 /* Global variables */
 JavaVM *cached_jvm;
@@ -16,6 +27,7 @@ jobject jctx, jnode;
 jobject ctx_obj, node_obj;
 jstring data;
 coap_context_t *ctx;
+int id;
 
 /* JNI on Load, caching variables here */
 JNIEXPORT jint JNICALL 
@@ -51,11 +63,91 @@ JNI_OnUnLoad( JavaVM *jvm, void *reserved ){
 	return;	
 }
 
+/* get HDR from Java class*/
+
+coap_pdu_t *
+make_pdu( unsigned int value, int type, int code, int id, char* data ) {
+  coap_pdu_t *pdu;
+  unsigned char enc;
+  int len, ls;
+
+  if ( ! ( pdu = coap_new_pdu() ) )
+    return NULL;
+
+  pdu->hdr->type = type;
+  pdu->hdr->code = code;
+  pdu->hdr->id = htons(id++);
+
+  enc = COAP_PSEUDOFP_ENCODE_8_4_DOWN(value,ls);
+  coap_add_data( pdu, 1, &enc);
+
+	/*buf = *data;	*/
+  len = sprintf((char *)data, "%u", COAP_PSEUDOFP_DECODE_8_4(enc));
+	/*printf("data_len = %d ", len);*/
+  if ( len > 0 ) {
+    coap_add_data( pdu, len, data );
+  }
+
+  return pdu;
+}
+
+
+JNIEXPORT void JNICALL 
+Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint jhdr_type, jint jhdr_code, jint jhdr_id, jint jport, jstring jdata) {
+	/*
+	jclass cls;
+	jfieldID fid;
+	jint ip_port;
+	*/
+  	struct sockaddr_in6 dst;
+  	coap_context_t  *ctx;
+  	coap_pdu_t  *pdu;
+	int hops = 16;
+	int type, code, id;
+	char *data;
+	
+	printf("HDR_TYPE = %d \n", jhdr_type);
+	printf("HDR_CODE = %d \n", jhdr_code);
+	printf("HDR_ID = %d \n", jhdr_id);
+	printf("PORT = %d \n", jport);
+	data = (*env)->GetStringUTFChars(env, jdata, NULL);
+	if (data==NULL) return;
+	printf("PDU_DATA = %s \n", data);
+	/*
+	cls = (*env)->FindClass(env,"Lde/tzi/coap/Client;");
+	if (cls==NULL) 		return;
+	fid = (*env)->GetStaticFieldID(env,cls,"port","I");
+	if (fid==NULL) 		return;
+	ip_port = (*env)->GetStaticIntField(env,cls,fid);	
+	printf("IP_Port = %d \n", ip_port);
+	*/
+	
+  	ctx = coap_new_context(0);
+
+  	memset(&dst, 0, sizeof(struct sockaddr_in6 ));
+  	dst.sin6_family = AF_INET6;
+  	inet_pton( AF_INET6, "::1", &dst.sin6_addr );
+  	dst.sin6_port = htons(616161);
+  	if ( IN6_IS_ADDR_MULTICAST(&dst.sin6_addr) ) {
+    	if ( setsockopt( ctx->sockfd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,(char *)&hops, sizeof(hops) ) < 0 )
+    		return;
+  	}
+  	
+  	type = (int)jhdr_type;
+  	code = (int)jhdr_code;
+  	id = (int)jhdr_id;
+	pdu = make_pdu( rand() & 0xfff, type, code, id, data );
+    coap_send( ctx, &dst, pdu);
+    coap_read( ctx );
+
+	(*env)->ReleaseStringUTFChars(env, jdata, data);	
+}
+
 
 /* register message handler */
 JNIEXPORT void JNICALL 
 Java_de_tzi_coap_jni_CoapSwigJNI_JNIRegisterMessageHandler (JNIEnv *env, jobject obj,jstring st) {
-	jclass cls;
+	/*jclass cls;*/
 	jclass ctx_cls;
 	jclass node_cls;
 	jmethodID midCons1;
@@ -69,9 +161,9 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIRegisterMessageHandler (JNIEnv *env, jobject
 
 	printf("2. Get Objects from Java \n");
 	/* Get Object from Java: ctx, node and data 
-	cached_obj = obj;
+	cached_obj = obj; */
 	/* context */
-	ctx_cls = (*env)->FindClass(env,"Lde/tzi/coap/jni/SWIGTYPE_p_coap_context_t;");
+	ctx_cls = (*env)->FindClass(env,"Lde/tzi/coap/jni/coap_context_t;");
 	midCons1 = (*env)->GetMethodID(env, ctx_cls, "<init>", "()V");
 	ctx_fid = (*env)->GetFieldID(env,ctx_cls,"swigCPtr","J");
 	ctx_ptr =(*env)->GetLongField(env, obj, ctx_fid);
@@ -82,7 +174,7 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIRegisterMessageHandler (JNIEnv *env, jobject
 	*/
 	
 	/* queue node*/
-	node_cls = (*env)->FindClass(env,"Lde/tzi/coap/jni/SWIGTYPE_p_coap_queue_t;");
+	node_cls = (*env)->FindClass(env,"Lde/tzi/coap/jni/coap_queue_t;");
 	midCons2 = (*env)->GetMethodID(env, node_cls, "<init>", "()V");
 	node_fid = (*env)->GetFieldID(env,node_cls,"swigCPtr","J");
 	node_ptr =(*env)->GetLongField(env, obj, node_fid);
@@ -111,10 +203,10 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIRegisterMessageHandler (JNIEnv *env, jobject
 	ctx = (coap_context_t *)ctx_obj; /*caching ctx for register_message_handler() */
     node_obj = (*env)->NewObject(env, node_cls, midCons2, node_ptr, NULL);
 	data = st;
-	if (ctx_obj!=NULL)		printf("CTX-OBJ = %x \n", ctx_obj);
-	if (node_obj!=NULL)		printf("NODE-OBJ = %x \n", node_obj);
+	if (ctx_obj!=NULL)		printf("CTX-OBJ = %x \n", (int)ctx_obj);
+	if (node_obj!=NULL)		printf("NODE-OBJ = %x \n", (int)node_obj);
 	str = (*env)->GetStringUTFChars(env, data, NULL);
-	printf("DATA = %s \n", str);	
+	printf("DATA = %s \n", (char*)data);	
 	
 	/* access C implementation here*/
 	printf("4. Get function pointer of message_handler_proxy() \n");	

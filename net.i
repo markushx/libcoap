@@ -4,6 +4,8 @@
 #include "net.h"
 %}
 
+%include <datatype.i>
+
 %typemap(jni) in_port_t "jint"
 %typemap(jtype) in_port_t "int"
 %typemap(jstype) in_port_t "int"
@@ -38,3 +40,4 @@ coap_queue_t *coap_find_transaction(coap_queue_t *queue, coap_tid_t id);
 void coap_dispatch( coap_context_t *context );
 
 int coap_can_exit( coap_context_t *context );
+

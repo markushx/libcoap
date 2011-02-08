@@ -1,9 +1,7 @@
 /* File: datatype.i */
 %module datatype
 %{
-#include "pdu.h"
-#include "net.h"
-#include "list.h"
+#include "coap.h"
 %}
 
 typedef struct coap_linkedlistnode{

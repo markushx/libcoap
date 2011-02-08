@@ -626,7 +626,7 @@ main(int argc, char **argv) {
       break;
     default:
       usage( argv[0], PACKAGE_VERSION );
-      exit( 1 );
+/*      exit( 1 );*/
     }
   }
 

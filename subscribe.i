@@ -4,6 +4,9 @@
 #include "subscribe.h"
 %}
 
+%include <datatype.i>
+
+
 void coap_check_resource_list(coap_context_t *context);
 void coap_check_subscriptions(coap_context_t *context);
 coap_key_t coap_add_resource(coap_context_t *context, coap_resource_t *);
