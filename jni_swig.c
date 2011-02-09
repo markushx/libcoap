@@ -17,8 +17,8 @@
 
 /* prototype */
 void message_handler_proxy(JNIEnv *env, jobject obj, jobject ctx, jobject node, jstring data);
-coap_pdu_t * make_pdu( unsigned int value, int type, int code, int id, char* data);
-void return_data(JNIEnv *env, jobject obj, jint id, jint len);
+coap_pdu_t * make_pdu( unsigned int value, int ver, int type, int opt_cnt, int code, int id, char* data);
+void return_data(JNIEnv *env, jobject obj, jint ver, jint type, jint opt_cnt, jint code, jint id, jint len);
 
 /* Global variables */
 JavaVM *cached_jvm;
@@ -57,7 +57,7 @@ JNI_OnLoad( JavaVM *jvm, void *reserved ){
 		
 	cls = (*env)->FindClass(env,"de/tzi/coap/Client");
 	if (cls==NULL) {return JNI_ERR; }
-	retdata_mid = (*env)->GetStaticMethodID(env,cls, "Return_PDU","(II)V");
+	retdata_mid = (*env)->GetStaticMethodID(env,cls, "Return_PDU","(IIIIII)V");
 	if (retdata_mid==NULL)	{ return JNI_ERR;}
 
 	return JNI_VERSION_1_2;
@@ -72,7 +72,7 @@ JNI_OnUnLoad( JavaVM *jvm, void *reserved ){
 /* get HDR from Java class*/
 
 coap_pdu_t *
-make_pdu( unsigned int value, int type, int code, int id, char* data ) {
+make_pdu( unsigned int value, int ver, int type, int opt_cnt, int code, int id, char* data ) {
   coap_pdu_t *pdu;
   unsigned char enc;
   int len, ls;
@@ -80,9 +80,11 @@ make_pdu( unsigned int value, int type, int code, int id, char* data ) {
   if ( ! ( pdu = coap_new_pdu() ) )
     return NULL;
 
+  pdu->hdr->version = ver;
   pdu->hdr->type = type;
+   pdu->hdr->optcnt = opt_cnt; 
   pdu->hdr->code = code;
-  pdu->hdr->id = htons(id++);
+  pdu->hdr->id = htons(id);
 
   enc = COAP_PSEUDOFP_ENCODE_8_4_DOWN(value,ls);
   coap_add_data( pdu, 1, &enc);
@@ -99,7 +101,7 @@ make_pdu( unsigned int value, int type, int code, int id, char* data ) {
 
 
 JNIEXPORT void JNICALL 
-Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint jhdr_type, jint jhdr_code, jint jhdr_id, jint jport, jstring jdata) {
+Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint jhdr_ver, jint jhdr_type, jint jhdr_opt_cnt, jint jhdr_code, jint jhdr_id, jint jport, jstring jdata) {
 	/*
 	jclass cls;
 	jfieldID fid;
@@ -109,7 +111,7 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
   	coap_context_t  *ctx;
   	coap_pdu_t  *pdu;
 	int hops = 16;
-	int type, code, id;
+	int ver, type, opt_cnt, code, id;
 	char *data;
 	coap_queue_t *node;
 	
@@ -143,10 +145,12 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
     		return;
   	}
   	
+  	ver = (int)jhdr_ver;
   	type = (int)jhdr_type;
+	opt_cnt = (int)jhdr_opt_cnt;
   	code = (int)jhdr_code;
   	id = (int)jhdr_id;
-	pdu = make_pdu( rand() & 0xfff, type, code, id, data );
+	pdu = make_pdu( rand() & 0xfff, ver, type, opt_cnt, code, id, data );
     coap_send( ctx, &dst, pdu);
     
     coap_read(ctx);
@@ -156,19 +160,20 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
     node = ctx->recvqueue;
   	/*printf("PDU (%d bytes) \n", node->pdu->length);
     coap_show_pdu( node->pdu );*/
-    return_data(env, obj, ntohs(node->pdu->hdr->id), node->pdu->length);
+    return_data(env, obj, node->pdu->hdr->version, node->pdu->hdr->type, node->pdu->hdr->optcnt, 
+    node->pdu->hdr->code, ntohs(node->pdu->hdr->id), node->pdu->length);
 
 	(*env)->ReleaseStringUTFChars(env, jdata, data);	
 }
 
-void return_data(JNIEnv *env, jobject obj, jint id,  jint len) {
+void return_data(JNIEnv *env, jobject obj,jint ver, jint type, jint opt_cnt, jint code, jint id, jint len) {
 	JNIEnv *env_temp;
 	int ret;
 
 	(*cached_jvm)->GetEnv(cached_jvm, (void **)&env_temp, JNI_VERSION_1_2);
 	ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&env_temp, NULL);
 	if (ret >= 0)
-		 (*env_temp)->CallVoidMethod(env_temp, obj, retdata_mid, id, len);	
+		 (*env_temp)->CallVoidMethod(env_temp, obj, retdata_mid, ver, type, opt_cnt, code, id, len);	
 }	
 
 

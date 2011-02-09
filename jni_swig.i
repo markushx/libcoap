@@ -11,7 +11,7 @@
 JNIEXPORT void JNICALL Java_de_tzi_coap_jni_CoapSwigJNI_JNIRegisterMessageHandler(JNIEnv *, jobject, jstring);
 %}
 
-%native (JNIPDUCoapSend) void JNIPDUCoapSend(int hdr_type, int hdr_code, int hdr_id,  int port, char *);
+%native (JNIPDUCoapSend) void JNIPDUCoapSend(int hdr_ver, int hdr_type,int hdr_opt_cnt, int hdr_code, int hdr_id,  int port, char *);
 %{
-JNIEXPORT void JNICALL Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *, jobject, jint, int, int, jint, jstring);
+JNIEXPORT void JNICALL Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *, jobject, jint, int, int, jint, jint, jint, jstring);
 %}
