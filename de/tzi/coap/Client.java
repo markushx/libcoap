@@ -23,6 +23,11 @@ public class Client {
 	public static int hdr_type,hdr_code, hdr_id;
 	public static String data;
 	public static de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6 dst;
+	
+	public static void Return_PDU(int id, int data_len) {
+		System.out.println("Return in Java HDR.ID = "+id);				
+		System.out.println("Return in Java PDU.LENGTH (byte) = "+data_len);				
+	}	
 
 	public static void main(String argv[]) throws Exception {    	
 		//int port = COAP_DEFAULT_PORT;
@@ -34,13 +39,13 @@ public class Client {
 		PDU  = pdu.coap_new_pdu();
   		Random generator = new Random();
 
-		for (int i=0; i<=10; i++) {
+		for (int i=0; i<5; i++) {
     		//SWIG access
  	 		HDR.setType(COAP_MESSAGE_CON);
   			HDR.setCode(COAP_REQUEST_POST);
   			HDR.setId(generator.nextInt(0xFFFF));
 			PDU.setHdr(HDR);
-			data = "SONVQ";
+			data = "DATA_STR";
 			len = data.length();
 			pdu.coap_add_data(PDU,len, data);
 		
@@ -53,17 +58,13 @@ public class Client {
     		hdr_type = (int)HDR.getType();
     		hdr_code = (int)HDR.getCode();
     		hdr_id = (int)HDR.getId();
-			//System.out.println("HDR.Type in Java = "+hdr_type);		
-			//System.out.println("HDR.Code in Java = "+hdr_code);		
-			//System.out.println("HDR.Id in Java = "+hdr_id);		
+			System.out.println("HDR.Type in Java = "+hdr_type);		
+			System.out.println("HDR.Code in Java = "+hdr_code);		
+			System.out.println("HDR.Id in Java = "+hdr_id);		
+			System.out.println("PDU.Data in Java = "+data);		
 			//send PDU using JNI access with libcoap
     		CoapSwig.JNIPDUCoapSend(hdr_type, hdr_code, hdr_id ,port,data);		
-		
-			//System.out.println("CTX in Java  = "+ctx);
-			//System.out.println("NODE in Java = "+node);		
-			//System.out.println("HDR in Java = "+HDR);		
-			//System.out.println("PDU in Java = "+ PDU);	
-			Thread.sleep(1000);
+			Thread.sleep(1000);		
 		}	
     }   
 }

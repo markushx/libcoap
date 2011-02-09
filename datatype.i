@@ -20,11 +20,11 @@ typedef struct coap_listnode {
 } coap_queue_t;
 
 typedef struct {
-  coap_list_t *resources, *subscriptions; /* FIXME: make these hash tables */
-  coap_queue_t *sendqueue, *recvqueue; /* FIXME make these coap_list_t */
-  int sockfd;			/* send/receive socket */
-/*  void ( *msg_handler )( void *, coap_queue_t *, void *);*/
-/*   coap_queue_t *asynresqueue;*/
+  	coap_list_t *resources, *subscriptions;
+  	coap_queue_t *sendqueue, *recvqueue;
+  	int sockfd;			/* send/receive socket */
+  /*void ( *msg_handler )( void *, coap_queue_t *, void *);*/
+	coap_queue_t *asynresqueue;
 } coap_context_t;
 
 typedef struct {

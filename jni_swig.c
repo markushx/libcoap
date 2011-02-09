@@ -18,10 +18,11 @@
 /* prototype */
 void message_handler_proxy(JNIEnv *env, jobject obj, jobject ctx, jobject node, jstring data);
 coap_pdu_t * make_pdu( unsigned int value, int type, int code, int id, char* data);
+void return_data(JNIEnv *env, jobject obj, jint id, jint len);
 
 /* Global variables */
 JavaVM *cached_jvm;
-jmethodID MID;
+jmethodID MID, retdata_mid;
 jfieldID fid_ctx, fid_node, fid_data;	
 jobject jctx, jnode;
 jobject ctx_obj, node_obj;
@@ -53,6 +54,11 @@ JNI_OnLoad( JavaVM *jvm, void *reserved ){
 	MID = (*env)->GetStaticMethodID(env,cls, "message_handler",
 	"(Lde/tzi/coap/jni/SWIGTYPE_p_coap_context_t;Lde/tzi/coap/jni/SWIGTYPE_p_coap_queue_t;Ljava/lang/String;)V");
 	if (MID==NULL)	{ return JNI_ERR;}
+		
+	cls = (*env)->FindClass(env,"de/tzi/coap/Client");
+	if (cls==NULL) {return JNI_ERR; }
+	retdata_mid = (*env)->GetStaticMethodID(env,cls, "Return_PDU","(II)V");
+	if (retdata_mid==NULL)	{ return JNI_ERR;}
 
 	return JNI_VERSION_1_2;
 }
@@ -105,14 +111,17 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
 	int hops = 16;
 	int type, code, id;
 	char *data;
+	coap_queue_t *node;
 	
+	/*
 	printf("HDR_TYPE = %d \n", jhdr_type);
 	printf("HDR_CODE = %d \n", jhdr_code);
 	printf("HDR_ID = %d \n", jhdr_id);
 	printf("PORT = %d \n", jport);
+	*/
 	data = (*env)->GetStringUTFChars(env, jdata, NULL);
 	if (data==NULL) return;
-	printf("PDU_DATA = %s \n", data);
+	/*printf("PDU_DATA = %s \n", data);*/
 	/*
 	cls = (*env)->FindClass(env,"Lde/tzi/coap/Client;");
 	if (cls==NULL) 		return;
@@ -128,6 +137,7 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
   	dst.sin6_family = AF_INET6;
   	inet_pton( AF_INET6, "::1", &dst.sin6_addr );
   	dst.sin6_port = htons(616161);
+/*  	printf ("dst.sin6_port = %d \n", dst.sin6_port);*/
   	if ( IN6_IS_ADDR_MULTICAST(&dst.sin6_addr) ) {
     	if ( setsockopt( ctx->sockfd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,(char *)&hops, sizeof(hops) ) < 0 )
     		return;
@@ -138,10 +148,28 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
   	id = (int)jhdr_id;
 	pdu = make_pdu( rand() & 0xfff, type, code, id, data );
     coap_send( ctx, &dst, pdu);
-    coap_read( ctx );
+    
+    coap_read(ctx);
+    
+    node = coap_new_node();
+    node->pdu = coap_new_pdu();
+    node = ctx->recvqueue;
+  	/*printf("PDU (%d bytes) \n", node->pdu->length);
+    coap_show_pdu( node->pdu );*/
+    return_data(env, obj, ntohs(node->pdu->hdr->id), node->pdu->length);
 
 	(*env)->ReleaseStringUTFChars(env, jdata, data);	
 }
+
+void return_data(JNIEnv *env, jobject obj, jint id,  jint len) {
+	JNIEnv *env_temp;
+	int ret;
+
+	(*cached_jvm)->GetEnv(cached_jvm, (void **)&env_temp, JNI_VERSION_1_2);
+	ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&env_temp, NULL);
+	if (ret >= 0)
+		 (*env_temp)->CallVoidMethod(env_temp, obj, retdata_mid, id, len);	
+}	
 
 
 /* register message handler */
