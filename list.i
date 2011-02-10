@@ -4,8 +4,6 @@
 #include "list.h"
 %}
 
-%include <datatype.i>
-
 int coap_insert(coap_list_t **queue, coap_list_t *node,
 		int (*order)(void *, void *) );
 int coap_delete(coap_list_t *node);

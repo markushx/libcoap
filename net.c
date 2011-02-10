@@ -28,7 +28,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/select.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <string.h>
+
 #endif
+
 
 #include "debug.h"
 #include "mem.h"
@@ -629,3 +635,23 @@ coap_can_exit( coap_context_t *context ) {
   return !context || (context->recvqueue == NULL && context->sendqueue == NULL);
 }
 
+coap_tid_t 
+coap_send_u( coap_context_t *context, sockaddr6_t *dst, coap_pdu_t *pdu ) {
+	struct sockaddr_in6 dst_tem;
+	int hops = 16;
+	/*
+	printf("COAP_SEND_U \n");	
+	printf("COAP_SEND_U family = %d \n", dst->sin6_family);	
+	printf("COAP_SEND_U AF_INET6 = %d \n", AF_INET6);	
+	printf("COAP_SEND_U port = %d \n", dst->sin6_port);	
+  	*/
+  	memset(&dst_tem, 0, sizeof(struct sockaddr_in6 ));
+  	dst_tem.sin6_family = dst->sin6_family;
+  	inet_pton(AF_INET6, "::1", &dst_tem.sin6_addr );
+  	dst_tem.sin6_port = htons(dst->sin6_port);
+  	if ( IN6_IS_ADDR_MULTICAST(&dst_tem.sin6_addr) ) {
+    	if ( setsockopt( context->sockfd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,(char *)&hops, sizeof(hops) ) < 0 )
+    		return;
+  	}
+  	return coap_send( context, &dst_tem, pdu);
+}

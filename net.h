@@ -32,6 +32,15 @@ typedef uint16_t ssize_t;
 
 #include "pdu.h"
 
+typedef struct sockaddr6{
+	int           	sin6_len;      
+	int           	sin6_family;   
+	int       		sin6_port;     
+	unsigned int    sin6_flowinfo; 
+	struct in6_addr  sin6_addr;     
+ } sockaddr6_t;
+
+
 struct coap_listnode {
   struct coap_listnode *next;
 

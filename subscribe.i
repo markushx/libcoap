@@ -4,7 +4,6 @@
 #include "subscribe.h"
 %}
 
-%include <datatype.i>
 
 
 void coap_check_resource_list(coap_context_t *context);

@@ -80,11 +80,11 @@ make_pdu( unsigned int value, int ver, int type, int opt_cnt, int code, int id, 
   if ( ! ( pdu = coap_new_pdu() ) )
     return NULL;
 
-  pdu->hdr->version = ver;
-  pdu->hdr->type = type;
-   pdu->hdr->optcnt = opt_cnt; 
-  pdu->hdr->code = code;
-  pdu->hdr->id = htons(id);
+  	pdu->hdr->version = ver;
+	pdu->hdr->type = type;
+   	pdu->hdr->optcnt = opt_cnt; 
+ 	pdu->hdr->code = code;
+  	pdu->hdr->id = htons(id);
 
   enc = COAP_PSEUDOFP_ENCODE_8_4_DOWN(value,ls);
   coap_add_data( pdu, 1, &enc);
@@ -102,11 +102,6 @@ make_pdu( unsigned int value, int ver, int type, int opt_cnt, int code, int id, 
 
 JNIEXPORT void JNICALL 
 Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint jhdr_ver, jint jhdr_type, jint jhdr_opt_cnt, jint jhdr_code, jint jhdr_id, jint jport, jstring jdata) {
-	/*
-	jclass cls;
-	jfieldID fid;
-	jint ip_port;
-	*/
   	struct sockaddr_in6 dst;
   	coap_context_t  *ctx;
   	coap_pdu_t  *pdu;
@@ -115,23 +110,8 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
 	char *data;
 	coap_queue_t *node;
 	
-	/*
-	printf("HDR_TYPE = %d \n", jhdr_type);
-	printf("HDR_CODE = %d \n", jhdr_code);
-	printf("HDR_ID = %d \n", jhdr_id);
-	printf("PORT = %d \n", jport);
-	*/
 	data = (*env)->GetStringUTFChars(env, jdata, NULL);
 	if (data==NULL) return;
-	/*printf("PDU_DATA = %s \n", data);*/
-	/*
-	cls = (*env)->FindClass(env,"Lde/tzi/coap/Client;");
-	if (cls==NULL) 		return;
-	fid = (*env)->GetStaticFieldID(env,cls,"port","I");
-	if (fid==NULL) 		return;
-	ip_port = (*env)->GetStaticIntField(env,cls,fid);	
-	printf("IP_Port = %d \n", ip_port);
-	*/
 	
   	ctx = coap_new_context(0);
 
@@ -139,7 +119,6 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
   	dst.sin6_family = AF_INET6;
   	inet_pton( AF_INET6, "::1", &dst.sin6_addr );
   	dst.sin6_port = htons(616161);
-/*  	printf ("dst.sin6_port = %d \n", dst.sin6_port);*/
   	if ( IN6_IS_ADDR_MULTICAST(&dst.sin6_addr) ) {
     	if ( setsockopt( ctx->sockfd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,(char *)&hops, sizeof(hops) ) < 0 )
     		return;
@@ -150,19 +129,19 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
 	opt_cnt = (int)jhdr_opt_cnt;
   	code = (int)jhdr_code;
   	id = (int)jhdr_id;
+	
 	pdu = make_pdu( rand() & 0xfff, ver, type, opt_cnt, code, id, data );
     coap_send( ctx, &dst, pdu);
-    
     coap_read(ctx);
     
+	/* return data to Java app*/
     node = coap_new_node();
     node->pdu = coap_new_pdu();
     node = ctx->recvqueue;
-  	/*printf("PDU (%d bytes) \n", node->pdu->length);
-    coap_show_pdu( node->pdu );*/
-    return_data(env, obj, node->pdu->hdr->version, node->pdu->hdr->type, node->pdu->hdr->optcnt, 
+    return_data(env, obj, node->pdu->hdr->version, node->pdu->hdr->type, node->pdu->hdr->optcnt,
     node->pdu->hdr->code, ntohs(node->pdu->hdr->id), node->pdu->length);
 
+	/* free resources*/
 	(*env)->ReleaseStringUTFChars(env, jdata, data);	
 }
 
