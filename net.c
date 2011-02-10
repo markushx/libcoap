@@ -635,16 +635,11 @@ coap_can_exit( coap_context_t *context ) {
   return !context || (context->recvqueue == NULL && context->sendqueue == NULL);
 }
 
+/*
 coap_tid_t 
 coap_send_u( coap_context_t *context, sockaddr6_t *dst, coap_pdu_t *pdu ) {
 	struct sockaddr_in6 dst_tem;
 	int hops = 16;
-	/*
-	printf("COAP_SEND_U \n");	
-	printf("COAP_SEND_U family = %d \n", dst->sin6_family);	
-	printf("COAP_SEND_U AF_INET6 = %d \n", AF_INET6);	
-	printf("COAP_SEND_U port = %d \n", dst->sin6_port);	
-  	*/
   	memset(&dst_tem, 0, sizeof(struct sockaddr_in6 ));
   	dst_tem.sin6_family = dst->sin6_family;
   	inet_pton(AF_INET6, "::1", &dst_tem.sin6_addr );
@@ -655,3 +650,4 @@ coap_send_u( coap_context_t *context, sockaddr6_t *dst, coap_pdu_t *pdu ) {
   	}
   	return coap_send( context, &dst_tem, pdu);
 }
+*/

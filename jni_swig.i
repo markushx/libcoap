@@ -4,7 +4,7 @@
 #include "de_tzi_coap_Coap.h"
 %}
 
-%include <datatype.i>
+/*%include <datatype.i>*/
 
 %native (JNIRegisterMessageHandler) void JNIRegisterMessageHandler(char *);
 %{

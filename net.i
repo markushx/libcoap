@@ -11,8 +11,18 @@
 %typemap(out) in_port_t %{ $result = (jint)$1; %}
 %typemap(in) in_port_t "(in_port_t)$1"
 
+%{
+#include <netinet/in.h>
+typedef coap_queue_t 	swig_coap_queue_t;
+typedef coap_context_t 	swig_coap_context_t;
+/*typedef sockaddr_in6 	swig_sockaddr_in6_t;*/
+%}
 
-%include "datatype.i"
+/*%inline %{
+extern coap_queue_t swig_coap_queue_t;
+%}	
+*/
+/*%include "datatype.i"*/
 
 
 int coap_insert_node(coap_queue_t **queue, coap_queue_t *node,
@@ -33,7 +43,7 @@ void coap_free_context( coap_context_t *context );
 coap_tid_t coap_send_confirmed( coap_context_t *context, const struct sockaddr_in6 *dst, coap_pdu_t *pdu );
 
 coap_tid_t coap_send( coap_context_t *context, const struct sockaddr_in6 *dst, coap_pdu_t *pdu );
-coap_tid_t coap_send_u( coap_context_t *context, sockaddr6_t *dst, coap_pdu_t *pdu );
+/*coap_tid_t coap_send_u( coap_context_t *context, sockaddr6_t *dst, coap_pdu_t *pdu );*/
 
 coap_tid_t coap_retransmit( coap_context_t *context, coap_queue_t *node );
 

@@ -4,6 +4,10 @@
 #include "list.h"
 %}
 
+%{
+typedef coap_list_t swig_coap_list_t;
+%}
+
 int coap_insert(coap_list_t **queue, coap_list_t *node,
 		int (*order)(void *, void *) );
 int coap_delete(coap_list_t *node);
