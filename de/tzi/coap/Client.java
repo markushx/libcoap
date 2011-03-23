@@ -14,7 +14,7 @@ public class Client {
     }
 
 	public static de.tzi.coap.jni.SWIGTYPE_p_coap_context_t ctx;
-	public static de.tzi.coap.jni.SWIGTYPE_p_Socket6 dst;
+	public static de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6 dst;
 	public static int version, type, option_cnt, hdr_code, id; 
 	public static int socket_family, socket_port;
 	public static String socket_addr;
