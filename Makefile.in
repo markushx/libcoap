@@ -17,34 +17,37 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 # the library's version
-VERSION:=@PACKAGE_VERSION@
+VERSION:=0.07
 
 # tools
-@SET_MAKE@
+
 SHELL = /bin/sh
 MKDIR = mkdir
 
-abs_builddir = @abs_builddir@
-top_builddir = @top_builddir@
-package = @PACKAGE_TARNAME@-@PACKAGE_VERSION@
+
+abs_builddir = /opt/tinyos-2.1.1/apps/libcoap
+top_builddir = .
+package = libcoap-0.07
 
 # files and flags
 SOURCES:= pdu.c net.c debug.c encode.c uri.c list.c subscribe.c str.c
+#jni_swig.c
 OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
-HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h list.h mem.h subscribe.h str.h
+HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h list.h mem.h subscribe.h str.h de_tzi_coap_CoapTest.h
 WRAPPER:=$(patsubst %.c, %_wrap.c, $(SOURCES))
 
-INTERFACES:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i
+#INTERFACES:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i constant.i socket.i
+INTERFACES:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i constant.i socket.i server.i
 JAVA:= $(patsubst %.i, %.java, $(INTERFACES))
 
 #CFLAGS:=-g -Wall -ansi -pedantic
-CFLAGS:=-Wall -ansi -pedantic @CFLAGS@
+CFLAGS:=-Wall -ansi -pedantic -g -O2 -I/usr/lib/jvm/java-6-sun/include/ -I/usr/lib/jvm/java-6-sun/include/linux/ -I/usr/lib/jvm/java-1.5.0-sun/include/ -I/usr/lib/jvm/java-1.5.0-sun/include/linux/
 DISTDIR=$(top_builddir)/$(package)
 SUBDIRS:=examples doc
 FILES:=Makefile.in configure configure.in config.h.in $(SOURCES) $(HEADERS)
 LIB:=libcoap.a
 SOLIB:=libcoap.so
-LDFLAGS:=@LIBS@
+LDFLAGS:=
 ARFLAGS:=cru
 examples:=examples
 doc:=doc
@@ -57,10 +60,26 @@ JC = javac
 .java.class:
 	$(JC) $(JFLAGS) $*.java
 
-javatest:
-	javac -cp . de/tzi/coap/CoapTest.java de/tzi/coap/Constants.java
-	java -cp . de/tzi/coap/CoapTest
+javatest:	
+	javah -jni -classpath /opt/tinyos-2.1.1/apps/libcoap -d /opt/tinyos-2.1.1/apps/libcoap/ de.tzi.coap.Coap
+	#gcc -I/usr/lib/jvm/java-6-sun/include/ -I/usr/lib/jvm/java-6-sun/include/linux/ -I/usr/lib/jvm/java-1.5.0-sun/include/ -I/usr/lib/jvm/java-1.5.0-sun/include/linux/ -shared /opt/tinyos-2.1.1/apps/libcoap/de/tzi/coap/jni_swig.c -o /opt/tinyos-2.1.1/apps/libcoap/libjni_swig.so
+	#gcc -I/usr/lib/jvm/java-6-sun/include/ -I/usr/lib/jvm/java-6-sun/include/linux/ -I/usr/lib/jvm/java-1.5.0-sun/include/ -I/usr/lib/jvm/java-1.5.0-sun/include/linux/ -shared /opt/tinyos-2.1.1/apps/libcoap/de/tzi/coap/jni_swig_wrap.c -o /opt/tinyos-2.1.1/apps/libcoap/libjni_swig_wrap.so
 
+coaptest:
+#	javac -cp . de/tzi/coap/CoapTest.java
+#	javah -jni -classpath /opt/tinyos-2.1.1/apps/libcoap -d /opt/tinyos-2.1.1/apps/libcoap/ de.tzi.coap.CoapTest
+#	gcc -I/usr/lib/jvm/java-6-sun/include/ -I/usr/lib/jvm/java-6-sun/include/linux/ -I/usr/lib/jvm/java-1.5.0-sun/include/ -I/usr/lib/jvm/java-1.5.0-sun/include/linux/ -shared /opt/tinyos-2.1.1/apps/libcoap/de/tzi/coap/CoapTest.c -o /opt/tinyos-2.1.1/apps/libcoap/CoapTest.o
+	gcc -I/usr/lib/jvm/java-6-sun/include/ -I/usr/lib/jvm/java-6-sun/include/linux/ -I/usr/lib/jvm/java-1.5.0-sun/include/ -I/usr/lib/jvm/java-1.5.0-sun/include/linux/ -shared /opt/tinyos-2.1.1/apps/libcoap/socket_wrap.c -o /opt/tinyos-2.1.1/apps/libcoap/socket_wrap.o
+	gcc -I/usr/lib/jvm/java-6-sun/include/ -I/usr/lib/jvm/java-6-sun/include/linux/ -I/usr/lib/jvm/java-1.5.0-sun/include/ -I/usr/lib/jvm/java-1.5.0-sun/include/linux/ -shared /opt/tinyos-2.1.1/apps/libcoap/server_wrap.c -o /opt/tinyos-2.1.1/apps/libcoap/server_wrap.o
+
+coap:
+#	javac -cp . de/tzi/coap/jni/CoapSwigJNI.java
+#	javac -cp . de/tzi/coap/jni/CoapSwig.java
+	javac -cp . de/tzi/coap/Coap.java
+
+client:
+	javac -cp . de/tzi/coap/Client.java
+	javac -cp . de/tzi/coap/Server.java
 
 #########
 
@@ -84,15 +103,17 @@ dirs:	$(SUBDIRS)
 $(LIB):	$(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^
 	ranlib $@
+#	javah -jni -classpath /opt/tinyos-2.1.1/apps/libcoap -d /opt/tinyos-2.1.1/apps/libcoap/ de.tzi.coap.Coap
+	
 
-$(SOLIB):	$(OBJECTS) $(WRAPPER)
+$(SOLIB):	$(OBJECTS) $(WRAPPER) /opt/tinyos-2.1.1/apps/libcoap/socket_wrap.o  /opt/tinyos-2.1.1/apps/libcoap/server_wrap.o
 	gcc -I/usr/lib/jvm/java-6-sun/include/ -I/usr/lib/jvm/java-6-sun/include/linux/ -I/usr/lib/jvm/java-1.5.0-sun/include/ -I/usr/lib/jvm/java-1.5.0-sun/include/linux/ -shared -Wl,-soname,$@ -o $@ $^
 
 swig:
 	mkdir -p de/tzi/coap/jni/
 
 	for ifc in $(INTERFACES); do \
-		swig -java -package de.tzi.coap.jni -outdir de/tzi/coap/jni/ $$ifc; \
+		swig -java -includeall -package de.tzi.coap.jni -outdir de/tzi/coap/jni/ $$ifc; \
 	done
 
 	javac de/tzi/coap/jni/*.java; \
@@ -101,9 +122,10 @@ swig:
 #		javac de/tzi/coap/jni/$$jv; \
 #	done
 # coap.i, config.i, mem.i needed as well?
+	
 
 clean:
-	@rm -f $(PROGRAM) main.o $(LIB) $(SOLIB) $(OBJECTS)
+	@rm -f $(PROGRAM) main.o $(LIB) $(SOLIB) $(OBJECTS) $(WRAPPER)
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean ; \
 	done
