@@ -634,20 +634,3 @@ int
 coap_can_exit( coap_context_t *context ) {
   return !context || (context->recvqueue == NULL && context->sendqueue == NULL);
 }
-
-/*
-coap_tid_t 
-coap_send_u( coap_context_t *context, sockaddr6_t *dst, coap_pdu_t *pdu ) {
-	struct sockaddr_in6 dst_tem;
-	int hops = 16;
-  	memset(&dst_tem, 0, sizeof(struct sockaddr_in6 ));
-  	dst_tem.sin6_family = dst->sin6_family;
-  	inet_pton(AF_INET6, "::1", &dst_tem.sin6_addr );
-  	dst_tem.sin6_port = htons(dst->sin6_port);
-  	if ( IN6_IS_ADDR_MULTICAST(&dst_tem.sin6_addr) ) {
-    	if ( setsockopt( context->sockfd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,(char *)&hops, sizeof(hops) ) < 0 )
-    		return;
-  	}
-  	return coap_send( context, &dst_tem, pdu);
-}
-*/

@@ -48,7 +48,7 @@ JNIEXPORT void JNICALL JNI_OnUnLoad( JavaVM *jvm, void *reserved ){
 struct sockaddr_in6 *socket6_create(int family, double port, jstring addr) {
 	char *stAddr;
 
-	stAddr = (*env)->GetStringUTFChars(env, addr, NULL);
+	stAddr = (char *)(*env)->GetStringUTFChars(env, addr, NULL);
 	if (stAddr==NULL) return;
 
   	struct sockaddr_in6 *p = (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
@@ -95,7 +95,7 @@ make_pdu(int ver, int type, int opt_cnt, int code, int id ) {
 void socket6_add_option(coap_pdu_t *pdu_ptr,jint opt_key, jint opt_length, jstring opt_data) {
 	char *data;
 
-	data = (*env)->GetStringUTFChars(env, opt_data, NULL);
+	data = (char *)(*env)->GetStringUTFChars(env, opt_data, NULL);
 	if (data==NULL) return;
 	
 	pdu = pdu_ptr;
@@ -145,7 +145,7 @@ void socket6_send(coap_context_t  *context, struct sockaddr_in6 *p, coap_pdu_t *
 	pdu = pdu_ptr;
 
 
-	data = (*env)->GetStringUTFChars(env, jdata, NULL);
+	data = (char *) (*env)->GetStringUTFChars(env, jdata, NULL);
 	if (data==NULL) return;
 	strcpy(buf, data);
   	enc = COAP_PSEUDOFP_ENCODE_8_4_DOWN(rand() & 0xfff,ls);

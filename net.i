@@ -43,7 +43,6 @@ void coap_free_context( coap_context_t *context );
 coap_tid_t coap_send_confirmed( coap_context_t *context, const struct sockaddr_in6 *dst, coap_pdu_t *pdu );
 
 coap_tid_t coap_send( coap_context_t *context, const struct sockaddr_in6 *dst, coap_pdu_t *pdu );
-/*coap_tid_t coap_send_u( coap_context_t *context, sockaddr6_t *dst, coap_pdu_t *pdu );*/
 
 coap_tid_t coap_retransmit( coap_context_t *context, coap_queue_t *node );
 
