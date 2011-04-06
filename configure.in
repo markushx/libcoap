@@ -27,6 +27,13 @@ AC_PROG_CC
 AC_PROG_RANLIB
 AC_PATH_PROG(DOXYGEN, doxygen, [:])
 
+# Checks for SWIG/Java/JNI.
+AC_CONFIG_MACRO_DIR([m4macros])
+AC_PROG_SWIG
+AC_PROG_JAVAC
+AC_PROG_JAVA
+#AC_PROG_JAVAH
+
 AC_C_BIGENDIAN
 
 # Checks for libraries.

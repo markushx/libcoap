@@ -49,27 +49,12 @@ ARFLAGS:=cru
 examples:=examples
 doc:=doc
 
-########java############
-JFLAGS = -g
-JC = javac
-
-.SUFFIXES: .java .class
-.java.class:
-	$(JC) $(JFLAGS) $*.java
-
-javatest:
-	javac de/tzi/coap/CoapTest.java de/tzi/coap/Constants.java
-	java de/tzi/coap/CoapTest
-
-
-#########
-
 .PHONY: all dirs clean distclean .gitignore doc
 
 .SUFFIXES:
 .SUFFIXES:      .c .o
 
-all:	$(LIB) $(SOLIB) dirs
+all:	$(LIB) dirs
 
 check:
 	echo DISTDIR: $(DISTDIR)
@@ -85,20 +70,31 @@ $(LIB):	$(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^
 	ranlib $@
 
+######## SWIG/JNI/Java ########
 $(SOLIB):	$(OBJECTS) $(WRAPPER)
-	gcc -I/usr/lib/jvm/java-6-sun-1.6.0.22/include/ -I/usr/lib/jvm/java-6-sun-1.6.0.22/include/linux/ -shared -Wl,-soname,$@ -o $@ $^
+	$(CC) -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ -shared -Wl,-soname,$@ -o $@ $^
 
-swig:
+swig:	$(SOLIB)
 	mkdir -p de/tzi/coap/jni/
 
 	for ifc in $(INTERFACES); do \
-		swig -java -package de.tzi.coap.jni -outdir de/tzi/coap/jni/ $$ifc; \
+		@SWIG@ -java -package de.tzi.coap.jni -outdir de/tzi/coap/jni/ $$ifc; \
 	done
 
 	for jv in $(JAVA); do \
 		javac de/tzi/coap/jni/$$jv; \
 	done
 # coap.i, config.i, mem.i needed as well?
+
+.SUFFIXES: .java .class
+.java.class:
+	@JAVAC@ -g $*.java
+
+javacoap:	swig
+	@JAVAC@ de/tzi/coap/CoapTest.java de/tzi/coap/Constants.java
+	@JAVA@ -Djava.library.path="." de/tzi/coap/CoapTest
+
+###############################
 
 clean:
 	@rm -f $(PROGRAM) main.o $(LIB) $(SOLIB) $(OBJECTS)
