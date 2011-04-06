@@ -1,7 +1,0 @@
-Run Java:
-
-make javatest 
-in case of "Exception in thread "main" java.lang.UnsatisfiedLinkError: no coap in java.library.path":
-add lib path to LD_LIBRARY_PATH:
-
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/thp/src/tinyos-main/apps/CoapBlip/libcoap/

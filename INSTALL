@@ -1,0 +1,10 @@
+To build libcoap:
+
+autoconf
+./configure
+make
+
+For the Java SWIG/JNI CoAP:
+
+export JAVA_HOME=/usr/lib/jvm/java-6-sun
+make javacoap
