@@ -32,22 +32,23 @@ package = @PACKAGE_TARNAME@-@PACKAGE_VERSION@
 SOURCES:= pdu.c net.c debug.c encode.c uri.c list.c subscribe.c str.c
 OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
 HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h list.h mem.h subscribe.h str.h
-WRAPPER:=$(patsubst %.c, %_wrap.c, $(SOURCES))
-
-INTERFACES:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i
-JAVA:= $(patsubst %.i, %.java, $(INTERFACES))
-
 #CFLAGS:=-g -Wall -ansi -pedantic
 CFLAGS:=-Wall -ansi -pedantic @CFLAGS@
 DISTDIR=$(top_builddir)/$(package)
 SUBDIRS:=examples doc
 FILES:=Makefile.in configure configure.in config.h.in $(SOURCES) $(HEADERS)
 LIB:=libcoap.a
-SOLIB:=libcoap.so
 LDFLAGS:=@LIBS@
 ARFLAGS:=cru
 examples:=examples
 doc:=doc
+
+#######
+INTERFACES:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i constant.i socket.i server.i
+JAVA:= $(patsubst %.i, %.java, $(INTERFACES))
+WRAPPER:=$(patsubst %.i, %_wrap.c, $(INTERFACES))
+WRAPPER_OBJECTS:=$(patsubst %.i, %_wrap.o, $(INTERFACES))
+#######
 
 .PHONY: all dirs clean distclean .gitignore doc
 
@@ -71,33 +72,47 @@ $(LIB):	$(OBJECTS)
 	ranlib $@
 
 ######## SWIG/JNI/Java ########
-$(SOLIB):	$(OBJECTS) $(WRAPPER)
-	$(CC) -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ -shared -Wl,-soname,$@ -o $@ $^
+SOLIB:=libcoap.so
+LDFLAGS:=
+#CFLAGS:=-Wall -ansi -pedantic -g -O2
 
-swig:	$(SOLIB)
+$(WRAPPER_OBJECTS):
+	$(CC) -c -g -O2 -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ $*.c
+
+
+#.SUFFIXES: .java .class
+#.java.class:
+#	@JAVAC@ -g $*.java
+
+$(SOLIB):	swig $(OBJECTS) $(WRAPPER_OBJECTS)
+	$(CC) -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ -shared -Wl,-soname,$@ -o $@ $(OBJECTS) $(WRAPPER_OBJECTS)
+
+swig:
 	mkdir -p de/tzi/coap/jni/
 
 	for ifc in $(INTERFACES); do \
-		@SWIG@ -java -package de.tzi.coap.jni -outdir de/tzi/coap/jni/ $$ifc; \
+		@SWIG@ -java -includeall -package de.tzi.coap.jni -outdir de/tzi/coap/jni/ $$ifc; \
 	done
 
-	for jv in $(JAVA); do \
-		javac de/tzi/coap/jni/$$jv; \
-	done
-# coap.i, config.i, mem.i needed as well?
+	@JAVAC@ de/tzi/coap/jni/*.java;
 
-.SUFFIXES: .java .class
-.java.class:
-	@JAVAC@ -g $*.java
+#coap:
+#	@JAVAC@ -cp . de/tzi/coap/Coap.java
 
-javacoap:	swig
-	@JAVAC@ de/tzi/coap/CoapTest.java de/tzi/coap/Constants.java
-	@JAVA@ -Djava.library.path="." de/tzi/coap/CoapTest
+client:	$(SOLIB)
+	@JAVAC@ -cp . de/tzi/coap/Client.java
+server:	$(SOLIB)
+	@JAVAC@ -cp . de/tzi/coap/Server.java
 
+runclient:	client
+	@JAVA@ -Djava.library.path="." de/tzi/coap/Client
+
+runserver:	server
+	@JAVA@ -Djava.library.path="." de/tzi/coap/Server
 ###############################
 
 clean:
-	@rm -f $(PROGRAM) main.o $(LIB) $(SOLIB) $(OBJECTS)
+	@rm -f $(PROGRAM) main.o $(LIB) $(SOLIB) $(OBJECTS) $(WRAPPER) $(WRAPPER_OBJECTS)
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean ; \
 	done

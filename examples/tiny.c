@@ -94,7 +94,8 @@ main(int argc, char **argv) {
   memset(&dst, 0, sizeof(struct sockaddr_in6 ));
   dst.sin6_family = AF_INET6;
   inet_pton( AF_INET6, argc > 1 ? argv[1] : "::1", &dst.sin6_addr );
-  dst.sin6_port = htons( COAP_DEFAULT_PORT );
+  /*dst.sin6_port = htons( COAP_DEFAULT_PORT );*/
+  dst.sin6_port = htons(616161);
 
   if ( IN6_IS_ADDR_MULTICAST(&dst.sin6_addr) ) {
     /* set socket options for multicast */ 

@@ -4,6 +4,11 @@
 #include "subscribe.h"
 %}
 
+%{
+typedef coap_resource_t swig_coap_resource_t;
+typedef coap_subscription_t swig_coap_subscription_t;
+%}
+
 void coap_check_resource_list(coap_context_t *context);
 void coap_check_subscriptions(coap_context_t *context);
 coap_key_t coap_add_resource(coap_context_t *context, coap_resource_t *);
