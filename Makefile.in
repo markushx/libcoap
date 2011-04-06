@@ -99,15 +99,15 @@ swig:
 #coap:
 #	@JAVAC@ -cp . de/tzi/coap/Coap.java
 
-client:	$(SOLIB)
+javaclient:	$(SOLIB)
 	@JAVAC@ -cp . de/tzi/coap/Client.java
-server:	$(SOLIB)
+javaserver:	$(SOLIB)
 	@JAVAC@ -cp . de/tzi/coap/Server.java
 
-runclient:	client
+runjavaclient:	client
 	@JAVA@ -Djava.library.path="." de/tzi/coap/Client
 
-runserver:	server
+runjavaserver:	server
 	@JAVA@ -Djava.library.path="." de/tzi/coap/Server
 ###############################
 

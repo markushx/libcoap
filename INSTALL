@@ -7,4 +7,8 @@ make
 For the Java SWIG/JNI CoAP:
 
 export JAVA_HOME=/usr/lib/jvm/java-6-sun
-make javacoap
+make javaclient
+make javaserver
+
+make runjavaclient
+make runjavaserver
