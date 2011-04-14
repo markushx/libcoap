@@ -104,10 +104,10 @@ javaclient:	$(SOLIB)
 javaserver:	$(SOLIB)
 	@JAVAC@ -cp . de/tzi/coap/Server.java
 
-runjavaclient:	client
+runjavaclient:	javaclient
 	@JAVA@ -Djava.library.path="." de/tzi/coap/Client
 
-runjavaserver:	server
+runjavaserver:	javaserver
 	@JAVA@ -Djava.library.path="." de/tzi/coap/Server
 ###############################
 
