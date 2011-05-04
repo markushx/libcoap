@@ -92,7 +92,7 @@ JNIEXPORT void JNICALL JNI_OnUnLoad( JavaVM *jvm, void *reserved ){
 struct sockaddr_in6 *s_socket6_create(int family, int port, jstring addr) {
 	char *stAddr;
 
-	stAddr = (*env)->GetStringUTFChars(env, addr, NULL);
+	stAddr = (char *)(*env)->GetStringUTFChars(env, addr, NULL);
 	if (stAddr==NULL) return;
 
   	struct sockaddr_in6 *p = (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
@@ -143,12 +143,12 @@ void server_read(coap_context_t  *ctx) {
   	bytes_read = recvfrom( ctx->sockfd, buf, COAP_MAX_PDU_SIZE, 0, (struct sockaddr *)&src, &addrsize );
 
   	node = coap_new_node();
-  	if ( !node )     return -1;
+  	if ( !node )     return;
 
   	node->pdu = coap_new_pdu();
   	if ( !node->pdu ) {
     	coap_delete_node( node );
-    	return -1;
+    	return;
   	}
 
   	time( &node->t );
@@ -641,7 +641,7 @@ start(struct sockaddr_in6 *p) {
   	if ( !ctx )    return -1;
 
 	printf ("1. Register msg_handler \n");
-  	coap_register_message_handler(ctx, message_handler );
+  	coap_register_message_handler(ctx, (void *)message_handler );
 	printf ("2. Init resource \n");
   	init_resources(ctx);
 
