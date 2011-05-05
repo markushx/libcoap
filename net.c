@@ -241,9 +241,12 @@ coap_new_context(in_port_t port) {
   time_t now;
   int reuse = 1, need_port = 1;
 
+  printf("coap_new_context: start\n");
+
   srand( getpid() ^ time(&now) );
 
   if ( !c ) {
+    printf("coap_init: malloc:\n");
     perror("coap_init: malloc:");
     return NULL;
   }
@@ -252,13 +255,15 @@ coap_new_context(in_port_t port) {
 
   c->sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
   if ( c->sockfd < 0 ) {
+    printf("coap_new_context: socket\n");
     perror("coap_new_context: socket");
     goto onerror;
   }
-  
-  if ( setsockopt( c->sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse) ) < 0 )
-    perror("setsockopt SO_REUSEADDR");
 
+  if ( setsockopt( c->sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse) ) < 0 ) {
+    printf("setsockopt SO_REUSEADDR\n");
+    perror("setsockopt SO_REUSEADDR");
+  }
   if ( port == 0 ) {
     port = COAP_DEFAULT_PORT;
     need_port = 0;
@@ -271,19 +276,21 @@ coap_new_context(in_port_t port) {
 
   if ( bind (c->sockfd, (struct sockaddr *)&addr, sizeof addr) < 0 ) {
     if (need_port) {
+      printf("coap_new_context: bind");
       perror("coap_new_context: bind");
       goto onerror;
     }
-    
+
     do {
       addr.sin6_port = htons( ++port );
     } while (bind (c->sockfd, (struct sockaddr *)&addr, sizeof addr) < 0);
-  } 
-  
+  }
+
   return c;
 
  onerror:
-  if ( c->sockfd >= 0 ) 
+  printf("return zero context");
+  if ( c->sockfd >= 0 )
     close ( c->sockfd );
   coap_free( c );
   return NULL;
