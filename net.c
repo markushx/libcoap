@@ -414,7 +414,7 @@ coap_read( coap_context_t *ctx ) {
   static char buf[COAP_MAX_PDU_SIZE];
   ssize_t bytes_read;
   static struct sockaddr_in6 src;
-  socklen_t addrsize = sizeof src;
+  socklen_t addrsize = sizeof(src);
   coap_queue_t *node;
   coap_opt_t *opt;
 
@@ -423,6 +423,16 @@ coap_read( coap_context_t *ctx ) {
 #endif
 
   printf("coap_read _A\n");
+
+  printf("coap_read: ctx %x\n",
+	 ctx);
+  printf("coap_read: ctx->sock %x\n",
+	 ctx->sockfd );
+  printf("coap_read: buf %x\n",
+	 buf );
+  printf("coap_read: ctx %x, ctx->sock %x, buf %x, COAP_MAX_PDU_SIZE %x, src %x, addr %x\n",
+	 ctx, ctx->sockfd, &buf, COAP_MAX_PDU_SIZE, 0,
+	 &src, &addrsize );
   bytes_read = recvfrom( ctx->sockfd, buf, COAP_MAX_PDU_SIZE, 0,
 			 (struct sockaddr *)&src, &addrsize );
 
