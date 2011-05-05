@@ -29,7 +29,7 @@ JNIEnv *env, *env_s, *env_c;
 jmethodID MID;
 jstring stData;
 
-coap_context_t  *ctx, *result_ctx;
+coap_context_t  *ctx; /*, *result_ctx;*/
 coap_pdu_t *pdu;
 coap_queue_t *nextpdu, *result_node;
 
@@ -102,7 +102,7 @@ struct sockaddr_in6 *s_socket6_create(int family, int port, jstring addr) {
 	inet_pton(AF_INET6, stAddr, &(p->sin6_addr) );  	
 
 				
-  	result_ctx = coap_new_context(COAP_DEFAULT_PORT);
+  	/*result_ctx = coap_new_context(COAP_DEFAULT_PORT);*/
   	result_node = coap_new_node();
 	result_node->pdu = coap_new_pdu();
 			
@@ -112,7 +112,7 @@ struct sockaddr_in6 *s_socket6_create(int family, int port, jstring addr) {
 
 void s_socket6_free(struct sockaddr_in6 *p) {
 	free(p);
-	free(result_ctx);
+	/*free(result_ctx);*/
 	free(result_node);
 }	
 
@@ -179,6 +179,8 @@ void server_read(coap_context_t  *ctx) {
   }
   coap_show_pdu( result_node->pdu );
   /*show_data(result_node->pdu);*/
+    printf("Context server read ctx = %d \n", ctx);	
+  
 #endif
 }	
 
@@ -231,6 +233,7 @@ void send_response(coap_context_t *context, coap_pdu_t *pdu_ptr) {
 	/*ctx = context;*/
 	pdu = pdu_ptr;
 	coap_send(context, &result_node->remote, pdu);
+    printf("Context server response ctx = %d \n", context);	
 }
 
 void

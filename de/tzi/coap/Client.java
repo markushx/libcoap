@@ -32,6 +32,8 @@ public class Client {
 		dst = socket.socket6_create(socket_family, socket_port, socket_addr);
 
 		ctx = net.coap_new_context(constant.COAP_DEFAULT_PORT);
+		//System.out.println("CTX in JAVA = "+ctx);
+		
 		stData 		= "35DEGREE";
 		
 		for (i=0;i<5;i++) {

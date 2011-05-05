@@ -159,10 +159,12 @@ void socket6_send(coap_context_t  *context, struct sockaddr_in6 *p, coap_pdu_t *
 	(*env)->ReleaseStringUTFChars(env, jdata, data);	
 	
 	coap_send(ctx, &dst, pdu);
+    printf("Context send ctx = %d \n", ctx);
 }	
 
 void socket6_receive(coap_context_t  *context) {
     coap_read(context);
+    printf("Context read ctx = %d \n", context);
 }    
 
 void socket6_free(struct sockaddr_in6 *p) {
