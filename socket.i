@@ -22,7 +22,7 @@
   JNIEnv *env;
   jmethodID MID;
 
-  coap_context_t  *ctx;
+  //coap_context_t  *ctx;
   coap_pdu_t *pdu;
 
   struct sockaddr_in6 *p;
@@ -126,7 +126,7 @@
     dst.sin6_addr   = p->sin6_addr;
     dst.sin6_port   = htons(p->sin6_port);
 
-    ctx	= context;
+    //ctx	= context;
 
     pdu = pdu_ptr;
 
@@ -143,14 +143,15 @@
 
     (*env)->ReleaseStringUTFChars(env, jdata, data);
 
-    coap_send(ctx, &dst, pdu);
-    printf("Context send ctx = %d \n", ctx);
+    printf("Context send ctx = %d \n", context);
+    coap_send(context, &dst, pdu);
+    printf("Context send~ ctx = %d \n", context);
   }
 
   void socket6_receive(coap_context_t  *context) {
-    printf("socket6_receive\n");
-    coap_read(context);
     printf("Context read ctx = %d \n", context);
+    coap_read(context);
+    printf("Context read~ ctx = %d \n", context);
   }
 
   void socket6_free(struct sockaddr_in6 *p) {
