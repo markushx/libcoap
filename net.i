@@ -20,7 +20,7 @@ typedef coap_context_t 	swig_coap_context_t;
 
 /*%inline %{
 extern coap_queue_t swig_coap_queue_t;
-%}	
+%}
 */
 /*%include "datatype.i"*/
 

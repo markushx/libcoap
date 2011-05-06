@@ -286,13 +286,14 @@ coap_new_context(in_port_t port) {
     } while (bind (c->sockfd, (struct sockaddr *)&addr, sizeof addr) < 0);
   }
 
+  printf("coap_new_context: return %x\n", c);
   return c;
 
  onerror:
-  printf("return zero context");
   if ( c->sockfd >= 0 )
     close ( c->sockfd );
   coap_free( c );
+  printf("return zero context");
   return NULL;
 }
 
