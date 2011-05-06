@@ -25,7 +25,7 @@ public class Client {
 	String stData;
 	Random generator = new Random();
 
-	//FIXME: use constatnt for socket_family
+	//FIXME: use constant for socket_family
 	socket_family = 10;
 	socket_port = 616161;
 	socket_addr = "::1";
@@ -34,7 +34,7 @@ public class Client {
 	ctx = net.coap_new_context(constant.COAP_DEFAULT_PORT);
 	System.out.println("CTX in JAVA = "+ctx);
 
-	if (ctx == 0) {
+	if (ctx == null) {
 	    System.out.println("Could not create context");
 	}
 
