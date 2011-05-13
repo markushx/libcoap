@@ -24,7 +24,6 @@ extern coap_queue_t swig_coap_queue_t;
 */
 /*%include "datatype.i"*/
 
-
 int coap_insert_node(coap_queue_t **queue, coap_queue_t *node,
 		     int (*order)(coap_queue_t *, coap_queue_t *node) );
 int coap_delete_node(coap_queue_t *node);

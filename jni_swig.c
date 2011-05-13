@@ -113,9 +113,7 @@ Java_de_tzi_coap_jni_CoapSwigJNI_JNIPDUCoapSend(JNIEnv *env, jobject obj, jint j
   data = (*env)->GetStringUTFChars(env, jdata, NULL);
   if (data==NULL) return;
 
-  printf("jni_swig.c: ctx");
   ctx = coap_new_context(0);
-  printf("jni_swig.c: ctx~ %x", ctx);
 
   memset(&dst, 0, sizeof(struct sockaddr_in6 ));
   dst.sin6_family = AF_INET6;

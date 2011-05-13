@@ -139,8 +139,6 @@
     static char addr[INET6_ADDRSTRLEN];
 #endif
 
-    printf("Context server_read ctx = %d \n", ctx);
-
     bytes_read = recvfrom( ctx->sockfd, buf, COAP_MAX_PDU_SIZE, 0, (struct sockaddr *)&src, &addrsize );
 
     node = coap_new_node();
@@ -181,7 +179,6 @@
     coap_show_pdu( result_node->pdu );
     /*show_data(result_node->pdu);*/
 #endif
-    printf("Context server_read ctx = %d \n", ctx);
   }
 
   int get_hdr_version () {	return result_node->pdu->hdr->version;}
@@ -231,9 +228,7 @@
   void send_response(coap_context_t *context, coap_pdu_t *pdu_ptr) {
     /*ctx = context;*/
     pdu = pdu_ptr;
-    printf("Context server send_response ctx = %d \n", context);
     coap_send(context, &result_node->remote, pdu);
-    printf("Context server send_response~ ctx = %d \n", context);
   }
 
   void

@@ -241,12 +241,9 @@ coap_new_context(in_port_t port) {
   time_t now;
   int reuse = 1, need_port = 1;
 
-  printf("coap_new_context: start\n");
-
   srand( getpid() ^ time(&now) );
 
   if ( !c ) {
-    printf("coap_init: malloc:\n");
     perror("coap_init: malloc:");
     return NULL;
   }
@@ -255,13 +252,11 @@ coap_new_context(in_port_t port) {
 
   c->sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
   if ( c->sockfd < 0 ) {
-    printf("coap_new_context: socket\n");
     perror("coap_new_context: socket");
     goto onerror;
   }
 
   if ( setsockopt( c->sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse) ) < 0 ) {
-    printf("setsockopt SO_REUSEADDR\n");
     perror("setsockopt SO_REUSEADDR");
   }
   if ( port == 0 ) {
@@ -276,7 +271,6 @@ coap_new_context(in_port_t port) {
 
   if ( bind (c->sockfd, (struct sockaddr *)&addr, sizeof addr) < 0 ) {
     if (need_port) {
-      printf("coap_new_context: bind");
       perror("coap_new_context: bind");
       goto onerror;
     }
@@ -286,7 +280,6 @@ coap_new_context(in_port_t port) {
     } while (bind (c->sockfd, (struct sockaddr *)&addr, sizeof addr) < 0);
   }
 
-  printf("coap_new_context: return %x\n", c);
   return c;
 
  onerror:
@@ -430,27 +423,14 @@ coap_read( coap_context_t *ctx ) {
   static char addr[INET6_ADDRSTRLEN];
 #endif
 
-  printf("coap_read _A\n");
-
-  printf("coap_read: ctx %x\n",
-	 ctx);
-  printf("coap_read: ctx->sock %x\n",
-	 ctx->sockfd );
-  printf("coap_read: buf %x\n",
-	 buf );
-  printf("coap_read: ctx %x, ctx->sock %x, buf %x, COAP_MAX_PDU_SIZE %x, src %x, addr %x\n",
-	 ctx, ctx->sockfd, &buf, COAP_MAX_PDU_SIZE, 0,
-	 &src, &addrsize );
   bytes_read = recvfrom( ctx->sockfd, buf, COAP_MAX_PDU_SIZE, 0,
 			 (struct sockaddr *)&src, &addrsize );
 
-  printf("coap_read _B\n");
   if ( bytes_read < 0 ) {
     perror("coap_read: recvfrom");
     return -1;
   }
 
-  printf("coap_read _C\n");
   if ( bytes_read < sizeof(coap_hdr_t)) {
 #ifndef NDEBUG
     fprintf(stderr, "coap_read: discarded invalid frame (too small)\n" );
@@ -458,7 +438,6 @@ coap_read( coap_context_t *ctx ) {
     return -1;
   }
 
-  printf("coap_read _D\n");
   if (((coap_hdr_t *)buf)->version != COAP_DEFAULT_VERSION ) {
 #ifndef NDEBUG
     fprintf(stderr, "coap_read: discarded invalid frame (wrong version 0x%x)\n", ((coap_hdr_t *)buf)->version );
@@ -466,28 +445,23 @@ coap_read( coap_context_t *ctx ) {
     return -1;
   }
 
-  printf("coap_read _D2\n");
   node = coap_new_node();
   if ( !node )
     return -1;
 
-  printf("coap_read _E\n");
   node->pdu = coap_new_pdu();
   if ( !node->pdu ) {
     coap_delete_node( node );
     return -1;
   }
 
-  printf("coap_read _F\n");
   time( &node->t );
   memcpy( &node->remote, &src, sizeof( src ) );
 
-  printf("coap_read _G\n");
   /* "parse" received PDU by filling pdu structure */
   memcpy( node->pdu->hdr, buf, bytes_read );
   node->pdu->length = bytes_read;
 
-  printf("coap_read _H\n");
   /* finally calculate beginning of data block */
   options_end( node->pdu, &opt );
 
@@ -499,7 +473,6 @@ coap_read( coap_context_t *ctx ) {
   /* and add new node to receive queue */
   coap_insert_node( &ctx->recvqueue, node, order_transaction_id );
 
-  printf("coap_read _I\n");
 #ifndef NDEBUG
   if ( inet_ntop(src.sin6_family, &src.sin6_addr, addr, INET6_ADDRSTRLEN) == 0 ) {
     perror("coap_read: inet_ntop");
@@ -509,7 +482,6 @@ coap_read( coap_context_t *ctx ) {
   coap_show_pdu( node->pdu );
 #endif
 
-  printf("coap_read _J\n");
   return 0;
 }
 #endif

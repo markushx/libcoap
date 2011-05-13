@@ -32,7 +32,6 @@ public class Client {
 	dst = socket.socket6_create(socket_family, socket_port, socket_addr);
 
 	ctx = net.coap_new_context(constant.COAP_DEFAULT_PORT);
-	System.out.println("CTX in JAVA = "+ctx);
 
 	if (ctx == null) {
 	    System.out.println("Could not create context");
@@ -66,14 +65,10 @@ public class Client {
 	    socket.socket6_add_option(pdu, opt_key, opt_length, opt_data);
 
 	    //send pdu
-	    System.out.println("CTX in JAVA before socket6_send " + ctx);
 	    socket.socket6_send(ctx, dst, pdu, stData);
-	    System.out.println("CTX in JAVA after socket6_send " + ctx);
 
 	    //receive
-	    System.out.println("CTX in JAVA before socket6_receive " + ctx);
 	    socket.socket6_receive(ctx);
-	    System.out.println("CTX in JAVA after socket6_receive " + ctx);
 	    Thread.sleep(1000);
 	}
 

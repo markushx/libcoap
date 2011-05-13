@@ -143,15 +143,11 @@
 
     (*env)->ReleaseStringUTFChars(env, jdata, data);
 
-    printf("Context send ctx = %d \n", context);
     coap_send(context, &dst, pdu);
-    printf("Context send~ ctx = %d \n", context);
   }
 
   void socket6_receive(coap_context_t  *context) {
-    printf("Context read ctx = %d \n", context);
     coap_read(context);
-    printf("Context read~ ctx = %d \n", context);
   }
 
   void socket6_free(struct sockaddr_in6 *p) {
