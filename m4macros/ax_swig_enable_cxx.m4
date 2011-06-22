@@ -1,28 +1,21 @@
 # ===========================================================================
-#          http://autoconf-archive.cryp.to/ac_check_rqrd_class.html
+#    http://www.gnu.org/software/autoconf-archive/ax_swig_enable_cxx.html
 # ===========================================================================
 #
 # SYNOPSIS
 #
-#   AC_CHECK_RQRD_CLASS
+#   AX_SWIG_ENABLE_CXX
 #
 # DESCRIPTION
 #
-#   AC_CHECK_RQRD_CLASS tests the existence of a given Java class, either in
-#   a jar or in a '.class' file and fails if it doesn't exist. Its success
-#   or failure can depend on a proper setting of the CLASSPATH env.
-#   variable.
-#
-#   Note: This is part of the set of autoconf M4 macros for Java programs.
-#   It is VERY IMPORTANT that you download the whole set, some macros depend
-#   on other. Unfortunately, the autoconf archive does not support the
-#   concept of set of macros, so I had to break it for submission. The
-#   general documentation, as well as the sample configure.in, is included
-#   in the AC_PROG_JAVA macro.
+#   Enable SWIG C++ support. This affects all invocations of $(SWIG).
 #
 # LICENSE
 #
-#   Copyright (c) 2008 Stephane Bortzmeyer <bortzmeyer@pasteur.fr>
+#   Copyright (c) 2008 Sebastian Huber <sebastian-huber@web.de>
+#   Copyright (c) 2008 Alan W. Irwin <irwin@beluga.phys.uvic.ca>
+#   Copyright (c) 2008 Rafael Laboissiere <rafael@laboissiere.net>
+#   Copyright (c) 2008 Andrew Collier <colliera@ukzn.ac.za>
 #
 #   This program is free software; you can redistribute it and/or modify it
 #   under the terms of the GNU General Public License as published by the
@@ -50,10 +43,11 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
-AC_DEFUN([AC_CHECK_RQRD_CLASS],[
-CLASS=`echo $1|sed 's/\./_/g'`
-AC_CHECK_CLASS($1)
-if test "$HAVE_LAST_CLASS" = "no"; then
-        AC_MSG_ERROR([Required class $1 missing, exiting.])
-fi
+#serial 6
+
+AU_ALIAS([SWIG_ENABLE_CXX], [AX_SWIG_ENABLE_CXX])
+AC_DEFUN([AX_SWIG_ENABLE_CXX],[
+        AC_REQUIRE([AX_PKG_SWIG])
+        AC_REQUIRE([AC_PROG_CXX])
+        SWIG="$SWIG -c++"
 ])

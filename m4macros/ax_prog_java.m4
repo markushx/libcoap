@@ -1,38 +1,38 @@
 # ===========================================================================
-#              http://autoconf-archive.cryp.to/ac_prog_java.html
+#       http://www.gnu.org/software/autoconf-archive/ax_prog_java.html
 # ===========================================================================
 #
 # SYNOPSIS
 #
-#   AC_PROG_JAVA
+#   AX_PROG_JAVA
 #
 # DESCRIPTION
 #
 #   Here is a summary of the main macros:
 #
-#   AC_PROG_JAVAC: finds a Java compiler.
+#   AX_PROG_JAVAC: finds a Java compiler.
 #
-#   AC_PROG_JAVA: finds a Java virtual machine.
+#   AX_PROG_JAVA: finds a Java virtual machine.
 #
-#   AC_CHECK_CLASS: finds if we have the given class (beware of CLASSPATH!).
+#   AX_CHECK_CLASS: finds if we have the given class (beware of CLASSPATH!).
 #
-#   AC_CHECK_RQRD_CLASS: finds if we have the given class and stops
+#   AX_CHECK_RQRD_CLASS: finds if we have the given class and stops
 #   otherwise.
 #
-#   AC_TRY_COMPILE_JAVA: attempt to compile user given source.
+#   AX_TRY_COMPILE_JAVA: attempt to compile user given source.
 #
 #   AC_TRY_RUN_JAVA: attempt to compile and run user given source.
 #
 #   AC_JAVA_OPTIONS: adds Java configure options.
 #
-#   AC_PROG_JAVA tests an existing Java virtual machine. It uses the
+#   AX_PROG_JAVA tests an existing Java virtual machine. It uses the
 #   environment variable JAVA then tests in sequence various common Java
 #   virtual machines. For political reasons, it starts with the free ones.
-#   You *must* call [AC_PROG_JAVAC] before.
+#   You *must* call [AX_PROG_JAVAC] before.
 #
 #   If you want to force a specific VM:
 #
-#   - at the configure.in level, set JAVA=yourvm before calling AC_PROG_JAVA
+#   - at the configure.in level, set JAVA=yourvm before calling AX_PROG_JAVA
 #
 #     (but after AC_INIT)
 #
@@ -57,18 +57,18 @@
 #   This is a sample configure.in Process this file with autoconf to produce
 #   a configure script.
 #
-#      AC_INIT(UnTag.java)
+#     AC_INIT(UnTag.java)
 #
-#      dnl Checks for programs.
-#      AC_CHECK_CLASSPATH
-#      AC_PROG_JAVAC
-#      AC_PROG_JAVA
+#     dnl Checks for programs.
+#     AC_CHECK_CLASSPATH
+#     AX_PROG_JAVAC
+#     AX_PROG_JAVA
 #
-#      dnl Checks for classes
-#      AC_CHECK_RQRD_CLASS(org.xml.sax.Parser)
-#      AC_CHECK_RQRD_CLASS(com.jclark.xml.sax.Driver)
+#     dnl Checks for classes
+#     AX_CHECK_RQRD_CLASS(org.xml.sax.Parser)
+#     AX_CHECK_RQRD_CLASS(com.jclark.xml.sax.Driver)
 #
-#      AC_OUTPUT(Makefile)
+#     AC_OUTPUT(Makefile)
 #
 # LICENSE
 #
@@ -100,14 +100,16 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
-AC_DEFUN([AC_PROG_JAVA],[
-AC_REQUIRE([AC_EXEEXT])dnl
+#serial 7
+
+AU_ALIAS([AC_PROG_JAVA], [AX_PROG_JAVA])
+AC_DEFUN([AX_PROG_JAVA],[
 if test x$JAVAPREFIX = x; then
-        test x$JAVA = x && AC_CHECK_PROGS(JAVA, kaffe$EXEEXT java$EXEEXT)
+        test x$JAVA = x && AC_CHECK_PROGS(JAVA, kaffe java)
 else
-        test x$JAVA = x && AC_CHECK_PROGS(JAVA, kaffe$EXEEXT java$EXEEXT, $JAVAPREFIX)
+        test x$JAVA = x && AC_CHECK_PROGS(JAVA, kaffe java, $JAVAPREFIX)
 fi
 test x$JAVA = x && AC_MSG_ERROR([no acceptable Java virtual machine found in \$PATH])
-AC_PROG_JAVA_WORKS
+AX_PROG_JAVA_WORKS
 AC_PROVIDE([$0])dnl
 ])

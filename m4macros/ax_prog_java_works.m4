@@ -1,10 +1,10 @@
 # ===========================================================================
-#           http://autoconf-archive.cryp.to/ac_prog_java_works.html
+#    http://www.gnu.org/software/autoconf-archive/ax_prog_java_works.html
 # ===========================================================================
 #
 # SYNOPSIS
 #
-#   AC_PROG_JAVA_WORKS
+#   AX_PROG_JAVA_WORKS
 #
 # DESCRIPTION
 #
@@ -15,7 +15,7 @@
 #   on other. Unfortunately, the autoconf archive does not support the
 #   concept of set of macros, so I had to break it for submission. The
 #   general documentation, as well as the sample configure.in, is included
-#   in the AC_PROG_JAVA macro.
+#   in the AX_PROG_JAVA macro.
 #
 # LICENSE
 #
@@ -47,9 +47,12 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
-AC_DEFUN([AC_PROG_JAVA_WORKS], [
-AC_CHECK_PROG(uudecode, uudecode$EXEEXT, yes)
-if test x$uudecode = xyes; then
+#serial 6
+
+AU_ALIAS([AC_PROG_JAVA_WORKS], [AX_PROG_JAVA_WORKS])
+AC_DEFUN([AX_PROG_JAVA_WORKS], [
+AC_CHECK_PROG(UUDECODE, uudecode, no)
+if test x$uudecode != xno; then
 AC_CACHE_CHECK([if uudecode can decode base 64 file], ac_cv_prog_uudecode_base64, [
 dnl /**
 dnl  * Test.java: used to test if java compiler works.
@@ -75,7 +78,7 @@ AAAABQO4AAyxAAAAAQAIAAAACgACAAAACgAEAAsAAQAPABAAAQAHAAAAIQAB
 AAEAAAAFKrcAErEAAAABAAgAAAAKAAIAAAAEAAQABAABABMAAAACABQ=
 ====
 EOF
-if uudecode$EXEEXT Test.uue; then
+if $UUDECODE Test.uue; then
         ac_cv_prog_uudecode_base64=yes
 else
         echo "configure: __oline__: uudecode had trouble decoding base 64 file 'Test.uue'" >&AC_FD_CC
@@ -92,7 +95,7 @@ if test x$ac_cv_prog_uudecode_base64 != xyes; then
                 AC_MSG_ERROR([Cannot compile java source. $JAVAC does not work properly])
         fi
         if test x$ac_cv_prog_javac_works = x; then
-                AC_PROG_JAVAC
+                AX_PROG_JAVAC
         fi
 fi
 AC_CACHE_CHECK(if $JAVA works, ac_cv_prog_java_works, [

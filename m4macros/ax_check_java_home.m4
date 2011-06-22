@@ -1,25 +1,21 @@
 # ===========================================================================
-#          http://autoconf-archive.cryp.to/ac_prog_javac_works.html
+#    http://www.gnu.org/software/autoconf-archive/ax_check_java_home.html
 # ===========================================================================
 #
 # SYNOPSIS
 #
-#   AC_PROG_JAVAC_WORKS
+#   AX_CHECK_JAVA_HOME
 #
 # DESCRIPTION
 #
-#   Internal use ONLY.
-#
-#   Note: This is part of the set of autoconf M4 macros for Java programs.
-#   It is VERY IMPORTANT that you download the whole set, some macros depend
-#   on other. Unfortunately, the autoconf archive does not support the
-#   concept of set of macros, so I had to break it for submission. The
-#   general documentation, as well as the sample configure.in, is included
-#   in the AC_PROG_JAVA macro.
+#   Check for Sun Java (JDK / JRE) installation, where the 'java' VM is in.
+#   If found, set environment variable JAVA_HOME = Java installation home,
+#   else left JAVA_HOME untouch, which in most case means JAVA_HOME is
+#   empty.
 #
 # LICENSE
 #
-#   Copyright (c) 2008 Stephane Bortzmeyer <bortzmeyer@pasteur.fr>
+#   Copyright (c) 2008 Gleen Salmon <gleensalmon@yahoo.com>
 #
 #   This program is free software; you can redistribute it and/or modify it
 #   under the terms of the GNU General Public License as published by the
@@ -47,23 +43,38 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
-AC_DEFUN([AC_PROG_JAVAC_WORKS],[
-AC_CACHE_CHECK([if $JAVAC works], ac_cv_prog_javac_works, [
-JAVA_TEST=Test.java
-CLASS_TEST=Test.class
-cat << \EOF > $JAVA_TEST
-/* [#]line __oline__ "configure" */
-public class Test {
-}
-EOF
-if AC_TRY_COMMAND($JAVAC $JAVACFLAGS $JAVA_TEST) >/dev/null 2>&1; then
-  ac_cv_prog_javac_works=yes
-else
-  AC_MSG_ERROR([The Java compiler $JAVAC failed (see config.log, check the CLASSPATH?)])
-  echo "configure: failed program was:" >&AC_FD_CC
-  cat $JAVA_TEST >&AC_FD_CC
-fi
-rm -f $JAVA_TEST $CLASS_TEST
-])
-AC_PROVIDE([$0])dnl
+#serial 6
+
+AU_ALIAS([AC_CHECK_JAVA_HOME], [AX_CHECK_JAVA_HOME])
+
+AC_DEFUN([AX_CHECK_JAVA_HOME],
+[AC_MSG_CHECKING([for JAVA_HOME])
+# We used a fake loop so that we can use "break" to exit when the result
+# is found.
+while true
+do
+  # If the user defined JAVA_HOME, don't touch it.
+  test "${JAVA_HOME+set}" = set && break
+
+  # On Mac OS X 10.5 and following, run /usr/libexec/java_home to get
+  # the value of JAVA_HOME to use.
+  # (http://developer.apple.com/library/mac/#qa/qa2001/qa1170.html).
+  JAVA_HOME=`/usr/libexec/java_home 2>/dev/null`
+  test x"$JAVA_HOME" != x && break
+
+  # See if we can find the java executable, and compute from there.
+  TRY_JAVA_HOME=`ls -dr /usr/java/* 2> /dev/null | head -n 1`
+  if test x$TRY_JAVA_HOME != x; then
+    PATH=$PATH:$TRY_JAVA_HOME/bin
+  fi
+  AC_PATH_PROG([JAVA_PATH_NAME], [java])
+  if test "x$JAVA_PATH_NAME" != x; then
+    JAVA_HOME=`echo $JAVA_PATH_NAME | sed "s/\(.*\)[[/]]bin[[/]]java.*/\1/"`
+    break
+  fi
+
+  AC_MSG_NOTICE([Could not compute JAVA_HOME])
+  break
+done
+AC_MSG_RESULT([$JAVA_HOME])
 ])

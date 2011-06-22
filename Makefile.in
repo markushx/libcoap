@@ -33,7 +33,8 @@ SOURCES:= pdu.c net.c debug.c encode.c uri.c list.c subscribe.c str.c
 OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
 HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h list.h mem.h subscribe.h str.h
 #CFLAGS:=-g -Wall -ansi -pedantic
-CFLAGS:=-Wall -ansi -pedantic @CFLAGS@
+#CFLAGS:=-Wall -ansi -pedantic @CFLAGS@
+CFLAGS:=
 DISTDIR=$(top_builddir)/$(package)
 SUBDIRS:=examples doc
 FILES:=Makefile.in configure configure.in config.h.in $(SOURCES) $(HEADERS)
@@ -44,10 +45,49 @@ examples:=examples
 doc:=doc
 
 #######
-INTERFACES:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i constant.i socket.i server.i
-JAVA:= $(patsubst %.i, %.java, $(INTERFACES))
-WRAPPER:=$(patsubst %.i, %_wrap.c, $(INTERFACES))
-WRAPPER_OBJECTS:=$(patsubst %.i, %_wrap.o, $(INTERFACES))
+#INTERFACE:=debug.i pdu.i net.i encode.i uri.i list.i subscribe.i str.i constant.i socket.i server.i
+#JAVA:= $(patsubst %.i, %.java, $(INTERFACES))
+#WRAPPER:=$(patsubst %.i, swig/%_wrap.c, $(INTERFACES))
+#WRAPPER_OBJECTS:=$(patsubst %.i, swig/%_wrap.o, $(INTERFACES))
+
+TARGET        = coap
+SRCS          = $(SOURCES)
+INCLUDES      = -I.
+INTERFACE     = coap.i
+INTERFACEDIR  = swig/
+INTERFACEPATH = $(INTERFACEDIR)$(INTERFACE)
+SWIGOPT    = 
+SWIG       = @SWIG@
+
+LIBM       = @LIBM@
+LIBC       = @LIBC@
+LIBCRYPT   = @LIBCRYPT@
+SYSLIBS    = $(LIBM) $(LIBC) $(LIBCRYPT)
+LIBPREFIX  =
+
+# RUNTOOL is for use with runtime tools, eg set it to valgrind
+RUNTOOL    =
+# COMPILETOOL is a way to run the compiler under another tool, or more commonly just to stop the compiler executing
+COMPILETOOL=
+
+IWRAP      = $(INTERFACE:.i=_wrap.i)
+ISRCS      = $(IWRAP:.i=.c)
+ICXXSRCS   = $(IWRAP:.i=.cxx)
+IOBJS      = $(IWRAP:.i=.@OBJEXT@)
+
+# Symbols used for using shared libraries
+SO=		@SO@
+LDSHARED=	@LDSHARED@
+CCSHARED=	-shared
+CXXSHARED=      @CXXSHARED@
+
+# This is used for building shared libraries with a number of C++
+# compilers.   If it doesn't work,  comment it out.
+#@TRYLINKINGWITHCXX@
+
+OBJS      = $(SRCS:.c=.@OBJEXT@) $(CXXSRCS:.cxx=.@OBJEXT@)
+
+JAVA_HOME:=$(shell readlink -f /usr/bin/javac | sed "s:/bin/javac::")
 #######
 
 .PHONY: all dirs clean distclean .gitignore doc
@@ -72,47 +112,50 @@ $(LIB):	$(OBJECTS)
 	ranlib $@
 
 ######## SWIG/JNI/Java ########
-SOLIB:=libcoap.so
-LDFLAGS:=
+#SOLIB:=libcoap.so
+#LDFLAGS:=
 #CFLAGS:=-Wall -ansi -pedantic -g -O2
 
-$(WRAPPER_OBJECTS):
-	$(CC) -c -g -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ $*.c
+# $(WRAPPER_OBJECTS):	$(WRAPPER)
+# 	$(CC) -c -g -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ $*.c
+# $(WRAPPER):		$(INTERFACES)
+# 	$(SWIG) $(SWIGOPT) -o $(WRAPPER) $(SWIGLIB) $(INTERFACE)
 
+# $(SOLIB):		$(OBJECTS) $(WRAPPER_OBJECTS)
+# 	$(CC) -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ -shared -Wl,-soname,$@ -o $@ $(OBJECTS) $(WRAPPER_OBJECTS)
 
-#.SUFFIXES: .java .class
-#.java.class:
-#	@JAVAC@ -g $*.java
+# swigjava:
+# 	mkdir -p swig/java/de/tzi/coap/jni/
 
-$(SOLIB):	swig $(OBJECTS) $(WRAPPER_OBJECTS)
-	$(CC) -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ -shared -Wl,-soname,$@ -o $@ $(OBJECTS) $(WRAPPER_OBJECTS)
+# 	for ifc in $(INTERFACES); do \
+# 		echo $$ifc; \
+# 		echo $(patsubst %.i, swig/%_wrap.c, $$ifc); \
+# 		@SWIG@ -java -includeall -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/$(patsubst %.i, swig/%_wrap.c, $$ifc) $$ifc; \
+# 	done
 
-swig:
-	mkdir -p de/tzi/coap/jni/
+# 	@JAVAC@ -sourcepath ./swig/java/ -d ./swig/java swig/java/de/tzi/coap/jni/*.java;
 
-	for ifc in $(INTERFACES); do \
-		@SWIG@ -java -includeall -package de.tzi.coap.jni -outdir de/tzi/coap/jni/ $$ifc; \
-	done
+# swigpython:
+# 	mkdir -p swig/python/
 
-	@JAVAC@ de/tzi/coap/jni/*.java;
+# 	for ifc in $(INTERFACES); do \
+# 		@SWIG@ -python -includeall -outdir swig/python/ -o swig/$(patsubst %.i, swig/%_wrap.c, $$ifc) $$ifc; \
+# 	done
 
-#coap:
-#	@JAVAC@ -cp . de/tzi/coap/Coap.java
+# javaclient:	swigjava $(SOLIB)
+# 	@JAVAC@ -cp ./examples/java:./swig/java/ de/tzi/coap/Client.java
+# javaserver:	swigjava $(SOLIB)
+# 	@JAVAC@ -cp ./examples/java:./swig/java/ de/tzi/coap/Server.java
 
-javaclient:	$(SOLIB)
-	@JAVAC@ -cp . de/tzi/coap/Client.java
-javaserver:	$(SOLIB)
-	@JAVAC@ -cp . de/tzi/coap/Server.java
+# runjavaclient:	javaclient
+# 	@JAVA@ -Djava.library.path="." -cp ./examples/java:./swig/java/ de/tzi/coap/Client
 
-runjavaclient:	javaclient
-	@JAVA@ -Djava.library.path="." de/tzi/coap/Client
-
-runjavaserver:	javaserver
-	@JAVA@ -Djava.library.path="." de/tzi/coap/Server
+# runjavaserver:	javaserver
+# 	@JAVA@ -Djava.library.path="." -cp ./examples/java:./swig/java/ de/tzi/coap/Server
 ###############################
 
 clean:
-	@rm -f $(PROGRAM) main.o $(LIB) $(SOLIB) $(OBJECTS) $(WRAPPER) $(WRAPPER_OBJECTS)
+	@rm -f $(PROGRAM) main.o $(LIB) $(OBJECTS) $(WRAPPER) $(WRAPPER_OBJECTS)
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean ; \
 	done
@@ -134,3 +177,156 @@ dist:	$(FILES) $(SUBDIRS)
 
 .gitignore:
 	echo "core\n*~\n*.[oa]\n*.gz\n*.cap\n$(PROGRAM)\n$(DISTDIR)\n.gitignore" >$@
+
+
+##################################################################
+#####                       PYTHON                          ######
+##################################################################
+
+# Make sure these locate your Python installation
+ifeq (,$(PY3))
+  PYTHON_INCLUDE= $(DEFS) @PYINCLUDE@
+  PYTHON_LIB    = @PYLIB@
+  PYTHON        = @PYTHON@
+else
+  PYTHON_INCLUDE= $(DEFS) @PY3INCLUDE@
+  PYTHON_LIB    = @PY3LIB@
+  PYTHON        = @PYTHON3@
+endif
+
+# Extra Python specific linking options
+ifeq (,$(PY3))
+  PYTHON_DLNK   = @PYTHONDYNAMICLINKING@
+  PYTHON_LINK   = @PYLINK@
+else
+  PYTHON_DLNK   = @PYTHON3DYNAMICLINKING@
+  PYTHON_LINK   = @PY3LINK@
+endif
+PYTHON_SO     = @PYTHON_SO@
+
+# SWIG option for Python
+ifeq (,$(PY3))
+  SWIGPYTHON = $(SWIG) -python
+else
+  SWIGPYTHON = $(SWIG) -python -py3
+endif
+
+# ----------------------------------------------------------------
+# Build a C dynamically loadable module
+# ----------------------------------------------------------------
+
+python: $(SRCS)
+	$(SWIGPYTHON) $(SWIGOPT) $(INTERFACEPATH)
+	$(CC) -c $(CCSHARED) $(CFLAGS) $(ISRCS) $(SRCS) $(INCLUDES) $(PYTHON_INCLUDE)
+	$(LDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(PYTHON_DLNK) $(LIBS) -o $(LIBPREFIX)_$(TARGET)$(PYTHON_SO)
+
+# -----------------------------------------------------------------
+# Build statically linked Python interpreter
+#
+# These should only be used in conjunction with the %include embed.i
+# library file
+# -----------------------------------------------------------------
+
+#TKINTER = -L/usr/X11R6.3/lib -L/usr/local/compat/lib -ltk4.0 -ltcl7.4 -lX11
+TKINTER =
+PYTHON_LIBOPTS = $(PYTHON_LINK) @LIBS@ $(TKINTER) $(SYSLIBS)
+
+python_static: $(SRCS)
+	$(SWIGPYTHON) -lembed.i $(SWIGOPT) $(INTERFACEPATH)
+	$(CC) $(CFLAGS) @LINKFORSHARED@ $(ISRCS) $(SRCS) $(INCLUDES) \
+	$(PYTHON_INCLUDE) $(LIBS) -L$(PYTHON_LIB) $(PYTHON_LIBOPTS) -o $(TARGET)
+
+# -----------------------------------------------------------------
+# Running a Python example
+# -----------------------------------------------------------------
+
+ifeq (,$(PY3))
+  PYSCRIPT = runme.py
+else
+  PYSCRIPT = runme3.py
+endif
+
+PY2TO3 = 2to3 `2to3 -l | grep -v -E "Available|import$$" | awk '{print "-f "$$0}'`
+
+python_run: $(PYSCRIPT)
+	env LD_LIBRARY_PATH=.:$$LD_LIBRARY_PATH PYTHONPATH=$(srcdir):$$PYTHONPATH $(PYTHON) $(PYSCRIPT) >/dev/null
+
+runme3.py: runme.py
+	cp $< $@
+	$(PY2TO3) -w $@ >/dev/null 2>&1
+
+# -----------------------------------------------------------------
+# Cleaning the python examples
+# -----------------------------------------------------------------
+
+python_clean:
+	rm -f *_wrap* *~ .~* mypython@EXEEXT@ *.pyc
+	rm -f core @EXTRA_CLEAN@
+	rm -f *.@OBJEXT@ *@SO@ *@PYTHON_SO@
+	if [ -f runme.py ]; then rm -f runme3.py runme3.py.bak; fi
+
+##################################################################
+#####                       JAVA                            ######
+##################################################################
+
+# You need to set this variable to the java directories containing the
+# files "jni.h" and "md.h"
+# usually something like /usr/java/include and /usr/java/include/<arch-osname>.
+JAVA_INCLUDE = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+
+# Extra Java specific dynamic linking options
+JAVA_LIBPREFIX = lib
+JAVASO = .so
+JAVA_DLNK  = -shared -Wl,-soname,$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+JAVALDSHARED = $(CC)
+JAVACXXSHARED = $(CC)
+JAVACFLAGS = -fPIC
+
+# ----------------------------------------------------------------
+# Build a java dynamically loadable module (C)
+# ----------------------------------------------------------------
+
+java: $(SRCS)
+	echo "$(SRCS)"
+	mkdir -p swig/java/de/tzi/coap/jni/
+	$(SWIG) -java -includeall -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ISRCS) $(INTERFACEPATH)
+	$(CC) -c $(CCSHARED) $(CFLAGS) $(JAVACFLAGS) $(SRCS) swig/java/$(ISRCS) $(INCLUDES) $(JAVA_INCLUDE)
+	$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+	@JAVAC@ -sourcepath ./swig/java/ -d ./swig/java swig/java/de/tzi/coap/jni/*.java;
+
+# ----------------------------------------------------------------
+# Build a java dynamically loadable module (C++)
+# ----------------------------------------------------------------
+
+java_cpp: $(SRCS)
+	#$(SWIG) -java -c++ -includeall -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ICXXSRCS) $(INTERFACEPATH)
+	$(SWIG) -java -c++ -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ICXXSRCS) $(INTERFACEPATH)
+	#$(SWIG) -java -c++ $(SWIGOPT) $(INTERFACEPATH)
+	$(CC) -c $(CCSHARED) $(CFLAGS) $(JAVACFLAGS) $(SRCS) $(CXXSRCS) swig/java/$(ICXXSRCS) $(INCLUDES) $(JAVA_INCLUDE)
+	#$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+	$(JAVACXXSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) $(CPP_DLLIBS) -o $(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+
+# -----------------------------------------------------------------
+# Cleaning the java examples
+# -----------------------------------------------------------------
+
+java_clean:
+	rm -f *~ .~* *.class `find ./swig/java -name \*.java | grep -v runme.java`
+	rm -f swig/*_wrap*
+	rm -rf swig/java/*
+	rm -f core @EXTRA_CLEAN@
+	rm -f *.@OBJEXT@ *@JAVASO@
+
+javaclient:	java
+	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/CoapBase.java
+	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/Client.java
+
+javaserver:	java
+	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/CoapBase.java
+	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/Server.java
+
+runjavaclient:	javaclient
+	@JAVA@ -Djava.library.path="./swig/java" -cp ./swig/java/:./examples/java/ de.tzi.coap.Client
+
+runjavaserver:	javaserver
+	@JAVA@ -Djava.library.path="./swig/java" -cp ./swig/java/:./examples/java/ de.tzi.coap.Server
