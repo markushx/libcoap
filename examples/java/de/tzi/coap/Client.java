@@ -58,32 +58,21 @@ public class Client extends CoapBase {
 
 	// add media type option
 	System.out.println("INF: create option mediatype");
-	SWIGTYPE_p_unsigned_char mt = coap.new_unsignedCharArray(1);
-	coap.unsignedCharArray_setitem(mt, 0,
-				       (short)coap.COAP_MEDIATYPE_TEXT_PLAIN);
+	String mt = "" + coap.COAP_MEDIATYPE_TEXT_PLAIN;
 	coap.coap_add_option(pdu, (short)coap.COAP_OPTION_CONTENT_TYPE,
 			     (long)1, mt);
 
 	// add uri option
 	System.out.println("INF: create option uri");
 	String stUri = ".well-known/core";
-	SWIGTYPE_p_unsigned_char uri = coap.new_unsignedCharArray(stUri.length());
-	for (int j = 0; j < stUri.length(); j++) {
-	    coap.unsignedCharArray_setitem(uri, j,
-					   (short)stUri.charAt(j));
-	}
 	coap.coap_add_option(pdu, (short)coap.COAP_OPTION_URI_PATH,
-			     (long)stUri.length(), uri);
+			     (long)stUri.length(), stUri);
+
 
 	// add data
 	System.out.println("INF: create data");
 	String stData = "tst";
-	SWIGTYPE_p_unsigned_char data = coap.new_unsignedCharArray(stData.length());
-	for (int j = 0; j < stData.length(); j++) {
-	    coap.unsignedCharArray_setitem(data, j,
-					   (short)stData.charAt(j));
-	}
-	coap.coap_add_data(pdu, stData.length(), data);
+	coap.coap_add_data(pdu, stData.length(), stData);
 
 	// set destination
 	sockaddr_in6 dst = coap.sockaddr_in6_create(coapConstants.AF_INET6,
@@ -130,11 +119,8 @@ public class Client extends CoapBase {
 	System.out.println("****** node.getPdu().getLength() " + node.getPdu().getLength());
 	System.out.println("****** node.getPdu().getOptions() " + node.getPdu().getOptions());
 
-	SWIGTYPE_p_unsigned_char pdudata = node.getPdu().getData();
-	for (int i = 0; i < node.getPdu().getLength(); i++) {
-	    System.out.print(""+String.valueOf((char)coap.unsignedCharArray_getitem(pdudata, i)));
-	}
-	System.out.println("");
+	String pdudata = node.getPdu().getData();
+	System.out.println(pdudata);
 
 	//TODO: do more...
 

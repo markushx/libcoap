@@ -69,11 +69,8 @@ public class Server extends CoapBase {
 	System.out.println("****** node.getPdu().getLength() " + node.getPdu().getLength());
 	System.out.println("****** node.getPdu().getOptions() " + node.getPdu().getOptions());
 
-	SWIGTYPE_p_unsigned_char pdudata = node.getPdu().getData();
-	for (int i = 0; i < node.getPdu().getLength(); i++) {
-	    System.out.print(""+String.valueOf((char)coap.unsignedCharArray_getitem(pdudata, i)));
-	}
-	System.out.println("");
+	String pdudata = node.getPdu().getData();
+	System.out.println(pdudata);
 
 	//TODO: do more...
 

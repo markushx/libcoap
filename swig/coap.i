@@ -4,9 +4,72 @@
 //TODO: wrap Java specific stuff, to enable other languages as well
 //#endif
 
-%include "carrays.i"
-%array_functions(unsigned char, unsignedCharArray);
+%include "typemaps.i"
 
+// handle unsigned char* the same way as char* -> String
+
+%typemap(jni) unsigned char *, unsigned char *&, unsigned char[ANY], unsigned char[]               "jstring"
+%typemap(jtype) unsigned char *, unsigned char *&, unsigned char[ANY], unsigned char[]               "String"
+%typemap(jstype) unsigned char *, unsigned char *&, unsigned char[ANY], unsigned char[]               "String"
+
+/* unsigned char * - treat as String */
+%typemap(in, noblock=1) unsigned char * {
+ $1 = 0;
+  if ($input) {
+    $1 = ($1_ltype)JCALL2(GetStringUTFChars, jenv, $input, 0);
+    if (!$1) return $null;
+  }
+}
+
+%typemap(freearg, noblock=1) unsigned char * { if ($1) JCALL2(ReleaseStringUTFChars, jenv, $input, (const unsigned char *)$1); }
+%typemap(out, noblock=1) unsigned char * { if ($1) $result = JCALL1(NewStringUTF, jenv, (const unsigned char *)$1); }
+
+/* unsigned char *& - treat as String */
+%typemap(in, noblock=1) unsigned char *& ($*1_ltype temp = 0) {
+ $1 = 0;
+  if ($input) {
+    temp = ($*1_ltype)JCALL2(GetStringUTFChars, jenv, $input, 0);
+    if (!temp) return $null;
+  }
+  $1 = &temp;
+}
+%typemap(freearg, noblock=1) unsigned char *& { if ($1 && *$1) JCALL2(ReleaseStringUTFChars, jenv, $input, (const char *)*$1); }
+%typemap(out, noblock=1) unsigned char *& { if (*$1) $result = JCALL1(NewStringUTF, jenv, (const char *)*$1); }
+
+%typecheck(SWIG_TYPECHECK_STRING) /* Java String */
+    jstring,
+    unsigned char *,
+    unsigned char *&,
+    unsigned char[ANY],
+    unsigned char []
+    ""
+
+%typemap(throws) unsigned char *
+%{ SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, $1);
+   return $null; %}
+
+%typemap(javain) unsigned char *, unsigned char *&, unsigned char[ANY], unsigned char[] "$javainput"
+
+%typemap(javaout) unsigned char *, unsigned char *&, unsigned char[ANY], unsignedchar[] {
+    return $jnicall;
+  }
+
+/* String & length */
+%typemap(jni)     (unsigned char *STRING, size_t LENGTH) "jbyteArray"
+%typemap(jtype)   (unsigned char *STRING, size_t LENGTH) "byte[]"
+%typemap(jstype)  (unsigned char *STRING, size_t LENGTH) "byte[]"
+%typemap(javain)  (unsigned char *STRING, size_t LENGTH) "$javainput"
+%typemap(freearg) (unsigned char *STRING, size_t LENGTH) ""
+%typemap(in)      (unsigned char *STRING, size_t LENGTH) {
+    $1 = (unsigned char *) JCALL2(GetByteArrayElements, jenv, $input, 0);
+    $2 = (size_t) JCALL1(GetArrayLength,       jenv, $input);
+}
+%typemap(argout)  (unsigned char *STRING, size_t LENGTH) {
+    JCALL3(ReleaseByteArrayElements, jenv, $input, (jbyte *)$1, 0);
+}
+%apply (unsigned char *STRING, size_t LENGTH) { (unsigned char *STRING, int LENGTH) }
+
+// override protected to public:
 %typemap(javabody) SWIGTYPE %{
   private long swigCPtr;
   protected boolean swigCMemOwn;
@@ -278,12 +341,22 @@ void check_receive(coap_context_t *ctx) {
   return;
 }
 
+void coap_test_charp(char *data) {};
+void coap_test_ucharp(unsigned char *data) {};
+void coap_test_cucharp(const unsigned char *data) {};
+void coap_test_ccharp(const char *data) {};
+
 %}
 
 void register_message_handler(coap_context_t *ctx, jobject client_server);
 struct sockaddr_in6 *sockaddr_in6_create(int family, int port, jstring addr);
 void sockaddr_in6_free(struct sockaddr_in6 *p);
 void check_receive(coap_context_t *ctx);
+
+void coap_test_charp(char *data);
+void coap_test_ucharp(unsigned char *data);
+void coap_test_cucharp(const unsigned char *data);
+void coap_test_ccharp(const char *data);
 
 %javaconst(1);
 
