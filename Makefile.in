@@ -34,7 +34,8 @@ OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
 HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h list.h mem.h subscribe.h str.h
 #CFLAGS:=-g -Wall -ansi -pedantic
 #CFLAGS:=-Wall -ansi -pedantic @CFLAGS@
-CFLAGS:=
+#CFLAGS:=
+CFLAGS:= -g
 DISTDIR=$(top_builddir)/$(package)
 SUBDIRS:=examples doc
 FILES:=Makefile.in configure configure.in config.h.in $(SOURCES) $(HEADERS)
@@ -56,7 +57,7 @@ INCLUDES      = -I.
 INTERFACE     = coap.i
 INTERFACEDIR  = swig/
 INTERFACEPATH = $(INTERFACEDIR)$(INTERFACE)
-SWIGOPT    = 
+SWIGOPT    = -I/usr/include -I/usr/include/linux/
 SWIG       = @SWIG@
 
 LIBM       = @LIBM@
@@ -277,7 +278,7 @@ JAVA_INCLUDE = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
 # Extra Java specific dynamic linking options
 JAVA_LIBPREFIX = lib
 JAVASO = .so
-JAVA_DLNK  = -shared -Wl,-soname,$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+JAVA_DLNK  = -static-libgcc -shared -Wl,-soname,$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
 JAVALDSHARED = $(CC)
 JAVACXXSHARED = $(CC)
 JAVACFLAGS = -fPIC
