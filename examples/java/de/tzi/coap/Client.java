@@ -124,7 +124,8 @@ public class Client extends CoapBase {
 
 	// send pdu
 	coap.coap_send_confirmed(ctx, dst, pdu);
-        // handle retransmission, receive and dispatch -> will trigger messageHandler() callback
+	// handle retransmission, receive and dispatch
+	// -> will trigger messageHandler() callback
 	coap.check_receive_client(ctx);
 
 	// free data
@@ -137,9 +138,8 @@ public class Client extends CoapBase {
     public void messageHandler(coap_context_t ctx,
 			       coap_listnode node,
 			       String data) {
-
 	coap_pdu_t pdu = null;
-	System.out.println("INF: Java messageHandler()");
+	System.out.println("INF: Java Client messageHandler()");
 
 	System.out.println("****** pdu (" + node.getPdu().getLength() +  " bytes)"
 			   + " v:"  + node.getPdu().getHdr().getVersion()
@@ -175,7 +175,6 @@ public class Client extends CoapBase {
     }
 
     public void finish(coap_context_t ctx, coap_listnode node, coap_pdu_t pdu){
-
 	if ( (pdu != null) && (coap.coap_send( ctx, node.getRemote(), pdu ) == coapConstants.COAP_INVALID_TID )) {
 	    System.out.println("message_handler: error sending reponse");
 	    coap.coap_delete_pdu(pdu);
@@ -199,9 +198,9 @@ public class Client extends CoapBase {
 	optionList.add(contentTypeOption);
 	CoapJavaOption uriOption = new CoapJavaOption(coap.COAP_OPTION_URI_PATH, uri, uri.length());
 	optionList.add(uriOption);
-	CoapJavaOption tokenOption = new  CoapJavaOption(coap.COAP_OPTION_TOKEN, token, token.length());
+	CoapJavaOption tokenOption = new CoapJavaOption(coap.COAP_OPTION_TOKEN, token, token.length());
 	optionList.add(tokenOption);
-	if(method == coapConstants.COAP_REQUEST_GET || method == coapConstants.COAP_REQUEST_DELETE) {
+	if ( method == coapConstants.COAP_REQUEST_GET || method == coapConstants.COAP_REQUEST_DELETE) {
 	    payload = null;
 	}
 

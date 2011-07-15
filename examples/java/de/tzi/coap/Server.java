@@ -9,7 +9,6 @@ package de.tzi.coap;
 
 import de.tzi.coap.jni.coap;
 import de.tzi.coap.jni.coapConstants;
-import de.tzi.coap.jni.SWIGTYPE_p_unsigned_char;
 import de.tzi.coap.jni.sockaddr_in6;
 import de.tzi.coap.jni.coap_context_t;
 import de.tzi.coap.jni.coap_pdu_t;
@@ -28,7 +27,8 @@ public class Server extends CoapBase {
 	boolean quit = false;
 
 	// create coap_context
-	System.out.println("INF: create context"+coapConstants.COAP_DEFAULT_PORT);
+	System.out.println("INF: create context" +
+			   coapConstants.COAP_DEFAULT_PORT);
 	coap_context_t ctx;
 	ctx = coap.coap_new_context(coapConstants.COAP_DEFAULT_PORT);
 	if (ctx == null) {
@@ -42,14 +42,14 @@ public class Server extends CoapBase {
 
 	while (!quit) {
 	    System.out.println("INF: check_receive()");
-          try {
-	    coap.check_receive_server(ctx);
-	    System.out.println("INF: ~check_receive()");
-          } catch (Exception e) {
-          // Print out the exception that occurred
-          System.out.println("Excecption!!!!!!!!!!");
-          e.printStackTrace();
-          }
+	    try {
+		coap.check_receive_server(ctx);
+		System.out.println("INF: ~check_receive()");
+	    } catch (Exception e) {
+		// Print out the exception that occurred
+		System.out.println("Excecption!!!!!!!!!!");
+		e.printStackTrace();
+	    }
 	}
 
 	System.out.println("INF: ~run()");
@@ -58,7 +58,7 @@ public class Server extends CoapBase {
     public void messageHandler(coap_context_t ctx,
 			       coap_listnode node,
 			       String data) {
-	System.out.println("INF: messageHandler()");
+	System.out.println("INF: Java Server messageHandler()");
 
 	System.out.println("****** ctx " + ctx);
 	System.out.println("****** node " + node);
@@ -89,5 +89,4 @@ public class Server extends CoapBase {
 	s.run();
 	System.out.println("INF: ~main()");
     }
-
 }
