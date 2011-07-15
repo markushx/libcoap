@@ -51,7 +51,7 @@ public class Server extends CoapBase {
     public void messageHandler(coap_context_t ctx,
 			       coap_listnode node,
 			       String data) {
-	System.out.println("INF: messageHandler()");
+	System.out.println("INF: Java Server messageHandler()");
 
 	System.out.println("****** ctx " + ctx);
 	System.out.println("****** node " + node);

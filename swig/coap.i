@@ -205,29 +205,14 @@ JNIEXPORT void JNICALL message_handler_proxy(coap_context_t *ctx,
     *((coap_queue_t **)&jnode) = (coap_queue_t *) node;
     node_obj = (*jenv)->NewObject(jenv, node_cls, node_con, jnode, NULL);
 
-    //printf("ctx_obj %p, node_obj %p, data %p\n", ctx_obj, node_obj, data);
-    //printf("ctx_ptr %p, node_ptr %p, data %p\n", ctx_ptr, node_ptr, data);
-    //printf("ctx %p, node %p, data %p\n", ctx, node, data);
-
-    /* find class */
-    cls = (*jenv)->FindClass(jenv, "de/tzi/coap/Client");
+    /* find Java Client/Server class */
+    cls = (*jenv)->GetObjectClass(jenv, cached_client_server);
     if (cls == NULL) {
-      printf("INF: Not client.\n");
-      cls = (*jenv)->FindClass(jenv, "de/tzi/coap/Server");
-      if (cls == NULL) {
-	printf("INF: Not server.\n");
-	printf("ERR: Neither Server nor Client\n");
-	return;
-      } else {
-	printf("INF: Server.\n");
-      }
-    } else {
-      printf("INF: Client.\n");
+	printf("ERR: Client/Server class not found.\n");
     }
 
     methodid = (*jenv)->GetMethodID(jenv, cls, "messageHandler",
 				   "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/coap_listnode;Ljava/lang/String;)V");
-
     if (methodid == NULL) {
       printf("ERR: messageHandler not found.\n");
       return;
@@ -235,25 +220,14 @@ JNIEXPORT void JNICALL message_handler_proxy(coap_context_t *ctx,
       printf("INF: messageHandler found.\n");
     }
 
-    //printf("cached_client_server %p\n", cached_client_server);
-
     //TODO: handle data properly (needed at all?)
     jstring data_obj = (*jenv)->NewStringUTF(jenv, "");
-
-    /* printf("node->pdu %p\n", node->pdu); */
-    /* printf("node->pdu->hdr %p\n", node->pdu->hdr); */
-    /* printf("node->pdu->hdr->version %u\n", node->pdu->hdr->version); */
-    /* printf("node->pdu->hdr->type %u\n", node->pdu->hdr->type); */
-    /* printf("node->pdu->hdr->optcnt %u\n", node->pdu->hdr->optcnt); */
-    /* printf("node->pdu->hdr->code %u\n", node->pdu->hdr->code); */
-    /* printf("node->pdu->length %u\n", node->pdu->length); */
 
     printf("INF: callback into Java %p\n", methodid);
     (*jenv)->CallNonvirtualVoidMethod(jenv, cached_client_server, cls, methodid,
 				      ctx_obj, node_obj, data_obj);
 
     if ((*jenv)->ExceptionOccurred(jenv)) {
-      //if ((*jenv)->ExceptionCheck(jenv)) {
       printf("ERR: Exception occurred.\n");
       SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "Exception in callback.");
       return;
@@ -270,9 +244,7 @@ JNIEXPORT void JNICALL message_handler_proxy(coap_context_t *ctx,
 /* register message handler */
 void register_message_handler(coap_context_t *ctx, jobject client_server) {
   printf ("INF: register_message_handler(%p, %p)\n", ctx, client_server);
-
   cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
-
   coap_register_message_handler(ctx, message_handler_proxy);
   printf ("INF: ~register_message_handler()\n");
   fflush(stdout);
