@@ -9,7 +9,6 @@ package de.tzi.coap;
 
 import de.tzi.coap.jni.coap;
 import de.tzi.coap.jni.coapConstants;
-import de.tzi.coap.jni.SWIGTYPE_p_unsigned_char;
 import de.tzi.coap.jni.sockaddr_in6;
 import de.tzi.coap.jni.coap_context_t;
 import de.tzi.coap.jni.coap_pdu_t;
