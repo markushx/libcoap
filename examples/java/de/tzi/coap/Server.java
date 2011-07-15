@@ -28,7 +28,7 @@ public class Server extends CoapBase {
 	boolean quit = false;
 
 	// create coap_context
-	System.out.println("INF: create context");
+	System.out.println("INF: create context"+coapConstants.COAP_DEFAULT_PORT);
 	coap_context_t ctx;
 	ctx = coap.coap_new_context(coapConstants.COAP_DEFAULT_PORT);
 	if (ctx == null) {
@@ -41,9 +41,15 @@ public class Server extends CoapBase {
 	coap.register_message_handler(ctx, this);
 
 	while (!quit) {
-	    //System.out.println("INF: check_receive()");
-	    coap.check_receive(ctx);
-	    //System.out.println("INF: ~check_receive()");
+	    System.out.println("INF: check_receive()");
+          try {
+	    coap.check_receive_server(ctx);
+	    System.out.println("INF: ~check_receive()");
+          } catch (Exception e) {
+          // Print out the exception that occurred
+          System.out.println("Excecption!!!!!!!!!!");
+          e.printStackTrace();
+          }
 	}
 
 	System.out.println("INF: ~run()");
