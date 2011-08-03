@@ -33,7 +33,7 @@ public class Client extends CoapBase {
     coap_pdu_t new_ack( coap_context_t  ctx, coap_listnode node ) {
 	coap_pdu_t pdu = coap.coap_new_pdu();
 
-	if (pdu == null) {
+	if (pdu != null) {
 	    pdu.getHdr().setType(coapConstants.COAP_MESSAGE_ACK);
 	    pdu.getHdr().setCode(0);
 	    pdu.getHdr().setId( node.getPdu().getHdr().getId());
@@ -45,7 +45,7 @@ public class Client extends CoapBase {
     coap_pdu_t new_response( coap_context_t  ctx, coap_listnode node, int code ) {
 	coap_pdu_t pdu = new_ack(ctx, node);
 
-	if (pdu == null)
+	if (pdu != null)
 	    pdu.getHdr().setCode(code);
 
 	return pdu;
