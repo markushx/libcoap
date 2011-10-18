@@ -275,6 +275,22 @@ jstring,
     return p;
   }
 
+  jstring get_addr(struct sockaddr_in6 src) {
+    static char cAddr[INET6_ADDRSTRLEN];
+    printf("INF: get_addr()\n");
+
+    if ( inet_ntop(src.sin6_family, &src.sin6_addr, cAddr, INET6_ADDRSTRLEN) == 0 ) {
+      printf("INF: get_addr() inet_ntop fail\n");
+      SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to do address conversion.");
+    } else {
+      printf("INF: get_addr() inet_ntop success\n");
+    }
+
+    jstring stAddr = (*jenv)->NewStringUTF(jenv, cAddr);
+
+    return stAddr;
+  }
+
   void sockaddr_in6_free(struct sockaddr_in6 *p) {
     printf("INF: sockaddr_in6_free()\n");
     free(p);
@@ -393,6 +409,7 @@ jstring,
 
 void register_message_handler(coap_context_t *ctx, jobject client_server);
 struct sockaddr_in6 *sockaddr_in6_create(int family, int port, jstring addr);
+jstring get_addr(struct sockaddr_in6 src);
 void sockaddr_in6_free(struct sockaddr_in6 *p);
 void check_receive_client(coap_context_t *ctx);
 void check_receive_server(coap_context_t *ctx);

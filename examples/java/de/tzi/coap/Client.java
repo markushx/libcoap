@@ -148,6 +148,8 @@ public class Client extends CoapBase {
 			   + " c:"  + node.getPdu().getHdr().getCode()
 			   + " id:" + node.getPdu().getHdr().getId());
 
+	System.out.println("from:" + coap.get_addr(node.getRemote()));
+
 	if ( node.getPdu().getHdr().getVersion() != coapConstants.COAP_DEFAULT_VERSION ) {
 	    System.out.printf("dropped packet with unknown version %u\n", node.getPdu().getHdr().getVersion());
 	    return;
