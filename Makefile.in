@@ -112,49 +112,6 @@ $(LIB):	$(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^
 	ranlib $@
 
-######## SWIG/JNI/Java ########
-#SOLIB:=libcoap.so
-#LDFLAGS:=
-#CFLAGS:=-Wall -ansi -pedantic -g -O2
-
-# $(WRAPPER_OBJECTS):	$(WRAPPER)
-# 	$(CC) -c -g -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ $*.c
-# $(WRAPPER):		$(INTERFACES)
-# 	$(SWIG) $(SWIGOPT) -o $(WRAPPER) $(SWIGLIB) $(INTERFACE)
-
-# $(SOLIB):		$(OBJECTS) $(WRAPPER_OBJECTS)
-# 	$(CC) -I$(JAVA_HOME)/include/ -I$(JAVA_HOME)/include/linux/ -shared -Wl,-soname,$@ -o $@ $(OBJECTS) $(WRAPPER_OBJECTS)
-
-# swigjava:
-# 	mkdir -p swig/java/de/tzi/coap/jni/
-
-# 	for ifc in $(INTERFACES); do \
-# 		echo $$ifc; \
-# 		echo $(patsubst %.i, swig/%_wrap.c, $$ifc); \
-# 		@SWIG@ -java -includeall -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/$(patsubst %.i, swig/%_wrap.c, $$ifc) $$ifc; \
-# 	done
-
-# 	@JAVAC@ -sourcepath ./swig/java/ -d ./swig/java swig/java/de/tzi/coap/jni/*.java;
-
-# swigpython:
-# 	mkdir -p swig/python/
-
-# 	for ifc in $(INTERFACES); do \
-# 		@SWIG@ -python -includeall -outdir swig/python/ -o swig/$(patsubst %.i, swig/%_wrap.c, $$ifc) $$ifc; \
-# 	done
-
-# javaclient:	swigjava $(SOLIB)
-# 	@JAVAC@ -cp ./examples/java:./swig/java/ de/tzi/coap/Client.java
-# javaserver:	swigjava $(SOLIB)
-# 	@JAVAC@ -cp ./examples/java:./swig/java/ de/tzi/coap/Server.java
-
-# runjavaclient:	javaclient
-# 	@JAVA@ -Djava.library.path="." -cp ./examples/java:./swig/java/ de/tzi/coap/Client
-
-# runjavaserver:	javaserver
-# 	@JAVA@ -Djava.library.path="." -cp ./examples/java:./swig/java/ de/tzi/coap/Server
-###############################
-
 clean:
 	@rm -f $(PROGRAM) main.o $(LIB) $(OBJECTS) $(WRAPPER) $(WRAPPER_OBJECTS)
 	for dir in $(SUBDIRS); do \
@@ -294,6 +251,8 @@ java: $(SRCS)
 	$(CC) -c $(CCSHARED) $(CFLAGS) $(JAVACFLAGS) $(SRCS) swig/java/$(ISRCS) $(INCLUDES) $(JAVA_INCLUDE)
 	$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
 	@JAVAC@ -sourcepath ./swig/java/ -d ./swig/java swig/java/de/tzi/coap/jni/*.java;
+	#jar cvf examples/java/jnicoap.jar -C swig/java/ de/tzi/coap/jni/*.class
+	jar cvf examples/java/jnicoap.jar -C swig/java .
 
 # ----------------------------------------------------------------
 # Build a java dynamically loadable module (C++)
