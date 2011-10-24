@@ -57,8 +57,9 @@ INCLUDES      = -I.
 INTERFACE     = coap.i
 INTERFACEDIR  = swig/
 INTERFACEPATH = $(INTERFACEDIR)$(INTERFACE)
-SWIGOPT    = -I/usr/include -I/usr/include/linux/
-SWIG       = @SWIG@
+SWIGOPT    = -I/usr/include -I/usr/include/linux/ -I/usr/include/i386-linux-gnu
+#SWIG       = @SWIG@
+SWIG       = swig2.0
 
 LIBM       = @LIBM@
 LIBC       = @LIBC@

@@ -36,7 +36,8 @@ AC_JNI_INCLUDE_DIR
 AC_CHECK_JAVA_HOME
 
 #AX_PKG_SWIG(1.3, [], [ AC_MSG_ERROR([SWIG 1.3 is required to build..]) ])
-AX_PKG_SWIG2(2.0.4, [], [ AC_MSG_ERROR([SWIG 2.0 is required to build..]) ])
+#AX_PKG_SWIG2(2.0.4, [], [ AC_MSG_ERROR([SWIG 2.0 is required to build..]) ])
+#AX_PKG_SWIG2(2.0.4, [], [ ]) ])
 
 #AX_SWIG_ENABLE_CXX
 #AX_SWIG_MULTI_MODULE_SUPPORT
