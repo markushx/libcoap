@@ -75,6 +75,8 @@ public class Server extends CoapBase {
 	System.out.println("****** node.getPdu().getLength() " + node.getPdu().getLength());
 	System.out.println("****** node.getPdu().getOptions() " + node.getPdu().getOptions());
 
+	System.out.println("from:" + coap.get_addr(node.getRemote()));
+
 	String pdudata = node.getPdu().getData();
 	System.out.println(pdudata);
 
