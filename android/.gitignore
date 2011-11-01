@@ -1,0 +1,7 @@
+libs/
+obj/
+build.log
+build.properties
+default.properties
+local.properties
+proguard.cfg
