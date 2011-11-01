@@ -143,33 +143,33 @@ jstring,
 
   /* cache jvm */
   JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void *reserved) {
-    printf("INF: JNI_OnLoad\n");
+    //printf("INF: JNI_OnLoad\n");
 
     /* caching JVM */
     cached_jvm = jvm;
 
     /* get environment */
     if ((*jvm)->GetEnv(jvm, (void **)&jenv, JNI_VERSION_1_4)) {
-      printf("ERR: JNI verson not supported \n");
-      fflush(stdout);
+      //printf("ERR: JNI verson not supported \n");
+      //fflush(stdout);
       return JNI_ERR;
     }
 
-    fflush(stdout);
+    //fflush(stdout);
     return JNI_VERSION_1_4;
   }
 
   JNIEXPORT void JNICALL JNI_OnUnLoad(JavaVM *jvm, void *reserved) {
-    printf("INF: JNI_OnUnLoad\n" );
-    fflush(stdout);
+    //printf("INF: JNI_OnUnLoad\n" );
+    //fflush(stdout);
     return;
   }
 
   JNIEXPORT void JNICALL message_handler_proxy(coap_context_t *ctx,
 					       coap_queue_t *node,
 					       void *data) {
-    printf("INF: message_handler_proxy()\n");
-    printf("INF: ctx %p, node %p, data %p\n", ctx, node, data);
+    //printf("INF: message_handler_proxy()\n");
+    //printf("INF: ctx %p, node %p, data %p\n", ctx, node, data);
 
     //printf("--------------------------\n");
     //coap_show_pdu( node->pdu );
@@ -208,61 +208,61 @@ jstring,
       /* find Java Client/Server class */
       cls = (*jenv)->GetObjectClass(jenv, cached_client_server);
       if (cls == NULL) {
-	printf("ERR: Client/Server class not found.\n");
+	//printf("ERR: Client/Server class not found.\n");
       }
 
       methodid = (*jenv)->GetMethodID(jenv, cls, "messageHandler",
 				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/coap_listnode;Ljava/lang/String;)V");
       if (methodid == NULL) {
-	printf("ERR: messageHandler not found.\n");
+	//printf("ERR: messageHandler not found.\n");
 	return;
       } else {
-	printf("INF: messageHandler found.\n");
+	//printf("INF: messageHandler found.\n");
       }
 
       //TODO: handle data properly (needed at all?)
       jstring data_obj = (*jenv)->NewStringUTF(jenv, "");
 
-      printf("INF: callback into Java %p\n", methodid);
+      //printf("INF: callback into Java %p\n", methodid);
       (*jenv)->CallNonvirtualVoidMethod(jenv, cached_client_server, cls, methodid,
 					ctx_obj, node_obj, data_obj);
 
       if ((*jenv)->ExceptionOccurred(jenv)) {
-	printf("ERR: Exception occurred.\n");
+	//printf("ERR: Exception occurred.\n");
 	SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "Exception in callback.");
 	return;
       }
-      printf("INF: ~callback\n");
+      //printf("INF: ~callback\n");
 
     } else {
-      printf("ERR: could not attach to thread.\n");
+      //printf("ERR: could not attach to thread.\n");
     }
-    printf("INF: ~message_handler_proxy()\n");
-    fflush(stdout);
+    //printf("INF: ~message_handler_proxy()\n");
+    //fflush(stdout);
   }
 
   /* register message handler */
   void register_message_handler(coap_context_t *ctx, jobject client_server) {
-    printf ("INF: register_message_handler(%p, %p)\n", ctx, client_server);
+    //printf ("INF: register_message_handler(%p, %p)\n", ctx, client_server);
     cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
     coap_register_message_handler(ctx, message_handler_proxy);
-    printf ("INF: ~register_message_handler()\n");
-    fflush(stdout);
+    //printf ("INF: ~register_message_handler()\n");
+    //fflush(stdout);
   }
 
   struct sockaddr_in6 *sockaddr_in6_create(int family, int port, jstring addr) {
     char *stAddr;
 
-    printf("INF: sockaddr_in6_create()\n");
+    //printf("INF: sockaddr_in6_create()\n");
 
     stAddr = (char *)(*jenv)->GetStringUTFChars(jenv, addr, NULL);
     if (stAddr == NULL) {
-      printf("ERR: stAddr == NULL\n");
-      fflush(stdout);
+      //printf("ERR: stAddr == NULL\n");
+      //fflush(stdout);
       SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to allocate String.");
       return;
     }
-    printf("INF: family %i port %i addr %s\n", family, port, stAddr);
+    //printf("INF: family %i port %i addr %s\n", family, port, stAddr);
 
     struct sockaddr_in6 *p = (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
     p->sin6_family = family;
@@ -270,16 +270,16 @@ jstring,
     inet_pton(AF_INET6, stAddr, &(p->sin6_addr));
 
     (*jenv)->ReleaseStringUTFChars(jenv, addr, stAddr);
-    printf("INF: ~sockaddr_in6_create() %p\n", p);
-    fflush(stdout);
+    //printf("INF: ~sockaddr_in6_create() %p\n", p);
+    //fflush(stdout);
     return p;
   }
 
   void sockaddr_in6_free(struct sockaddr_in6 *p) {
-    printf("INF: sockaddr_in6_free()\n");
+    //printf("INF: sockaddr_in6_free()\n");
     free(p);
-    printf("INF: ~sockaddr_in6_free()\n");
-    fflush(stdout);
+    //printf("INF: ~sockaddr_in6_free()\n");
+    //fflush(stdout);
   }
 
   void check_receive_client(coap_context_t *ctx) {
@@ -296,11 +296,11 @@ jstring,
       FD_SET( ctx->sockfd, &readfds );
 
       nextpdu = coap_peek_next( ctx );
-      printf("INF: nextpdu %p\n", nextpdu);
+      //printf("INF: nextpdu %p\n", nextpdu);
 
       time(&now);
       while ( nextpdu && nextpdu->t <= now ) {
-	printf("INF: retransmit\n");
+	//printf("INF: retransmit\n");
 	coap_retransmit( ctx, coap_pop_next( ctx ) );
 	nextpdu = coap_peek_next( ctx );
       }
@@ -312,24 +312,24 @@ jstring,
 	timeout = NULL;           /* no timeout otherwise */
 
       result = select( ctx->sockfd + 1, &readfds, 0, 0, timeout );
-      printf("INF: result %u\n", result);
+      //printf("INF: result %u\n", result);
 
       if ( result < 0 ) {		/* error */
 	/*if (errno != EINTR)
 	  perror("select");*/
       } else if ( result > 0 ) {	/* read from socket */
 	if ( FD_ISSET( ctx->sockfd, &readfds ) ) {
-	  printf("INF: read\n");
+	  //printf("INF: read\n");
 	  coap_read( ctx );	/* read received data */
-	  printf("INF: ~read\n");
-	  printf("INF: dispatch\n");
+	  //printf("INF: ~read\n");
+	  //printf("INF: dispatch\n");
 	  coap_dispatch( ctx );	/* and dispatch PDUs from receivequeue */
-	  printf("INF: ~dispatch\n");
+	  //printf("INF: ~dispatch\n");
 	  exit = 0;
 	}
       }
     }
-    fflush(stdout);
+    //fflush(stdout);
     return;
   }
 
@@ -340,16 +340,16 @@ jstring,
     int result;
     time_t now;
     coap_queue_t *nextpdu;
-    printf("INF: ~test\n");
+    //printf("INF: ~test\n");
     FD_ZERO(&readfds);
     FD_SET( ctx->sockfd, &readfds );
 
     nextpdu = coap_peek_next( ctx );
-    printf("INF: nextpdu %p\n", nextpdu);
+    //printf("INF: nextpdu %p\n", nextpdu);
 
     time(&now);
     while ( nextpdu && nextpdu->t <= now ) {
-      printf("INF: retransmit\n");
+      //printf("INF: retransmit\n");
       coap_retransmit( ctx, coap_pop_next( ctx ) );
       nextpdu = coap_peek_next( ctx );
     }
@@ -365,27 +365,27 @@ jstring,
       timeout = &tv;
     }
     result = select( FD_SETSIZE, &readfds, 0, 0, timeout );
-    printf("INF: result %u\n", result);
+    //printf("INF: result %u\n", result);
 
     if ( result < 0 ) {           /* error */
       /*if (errno != EINTR)
 	perror("select");*/
     } else if ( result > 0 ) {    /* read from socket */
       if ( FD_ISSET( ctx->sockfd, &readfds ) ) {
-	printf("INF: read\n");
+	//printf("INF: read\n");
 	coap_read( ctx ); /* read received data */
-	printf("INF: ~read\n");
-	printf("INF: dispatch\n");
+	//printf("INF: ~read\n");
+	//printf("INF: dispatch\n");
 	coap_dispatch( ctx );     /* and dispatch PDUs from receivequeue */
-	printf("INF: ~dispatch\n");
+	//printf("INF: ~dispatch\n");
       }
     } else {                      /* timeout */
-      printf("INF: timeout\n");
+      //printf("INF: timeout\n");
       coap_check_resource_list( ctx );
       coap_check_subscriptions( ctx );
     }
 
-    fflush(stdout);
+    //fflush(stdout);
     return;
   }
 
