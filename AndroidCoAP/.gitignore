@@ -5,3 +5,7 @@ build.properties
 default.properties
 local.properties
 proguard.cfg
+.settings/
+bin/
+gen/
+

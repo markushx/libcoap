@@ -12,11 +12,11 @@ Doxyfile
 doc/doxygen.out
 examples/coap.out
 examples/filestorage
-*_wrap.c
+./*_wrap.c
 de_tzi_coap_Coap.h
 de_tzi_coap_CoapTest.h
 examples/coap-client
 examples/coap-server
 examples/tiny
 make.log
-
+filestorage
