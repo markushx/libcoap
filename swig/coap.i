@@ -7,7 +7,6 @@
 %include "typemaps.i"
 
  // handle unsigned char* the same way as char* -> String
-
 %typemap(jni) unsigned char *, unsigned char *&, unsigned char[ANY], unsigned char[]               "jstring"
 %typemap(jtype) unsigned char *, unsigned char *&, unsigned char[ANY], unsigned char[]               "String"
 %typemap(jstype) unsigned char *, unsigned char *&, unsigned char[ANY], unsigned char[]               "String"
@@ -89,6 +88,7 @@ jstring,
   $1 = (*jenv)->NewGlobalRef(jenv, $input);
  }
 
+%apply int { in_port_t };
 
 %{
   // libcoap
