@@ -1,1 +1,11 @@
-ndk-build
+
+modify SWIGOPT in Makefile.in to fit for your NDK dir
+
+libcoap/$ autoconf
+libcoap/$ ./configure
+libcoap/$ make java_clean && make java
+libcoap/$ cd AndroidCoAP
+
+AndroidCoAP/$ ndk-build
+
+-> eclipse

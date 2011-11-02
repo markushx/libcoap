@@ -96,13 +96,14 @@ jstring,
 #include "encode.h"
 #include "list.h"
 #include "net.h"
-#include <netinet/in.h>
 #include "pdu.h"
 #include "subscribe.h"
 #include "uri.h"
 
   // /usr/include
 #include "netdb.h"
+#include <netinet/in.h>
+#include <sys/select.h>
   %}
 
 %ignore __quad_t;
@@ -116,23 +117,24 @@ jstring,
 %typemap(javaout) (unsigned int) = int;
 
 // libcoap
-#include "debug.h"
-#include "encode.h"
-#include "list.h"
-#include "net.h"
-#include "pdu.h"
+%include "debug.h"
+%include "encode.h"
+%include "list.h"
+%include "net.h"
+%include "pdu.h"
 %ignore coap_opt_t;
 
-#include "subscribe.h"
-#include "uri.h"
+%include "subscribe.h"
+%include "uri.h"
 
 // /usr/include
-#include "netdb.h"
+//#include "netdb.h"
 
+/*
 %javaconst(1);
 #include "bits/socket.h"
 %javaconst(0);
-
+*/
 %{
   static JavaVM *cached_jvm;
   static JNIEnv *jenv;
@@ -189,7 +191,7 @@ jstring,
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
-    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
     if (ret >= 0) {
 
       //TODO: handle null pointers.
@@ -277,13 +279,13 @@ jstring,
 
   jstring get_addr(struct sockaddr_in6 src) {
     static char cAddr[INET6_ADDRSTRLEN];
-    printf("INF: get_addr()\n");
+    //printf("INF: get_addr()\n");
 
     if ( inet_ntop(src.sin6_family, &src.sin6_addr, cAddr, INET6_ADDRSTRLEN) == 0 ) {
-      printf("INF: get_addr() inet_ntop fail\n");
+      //printf("INF: get_addr() inet_ntop fail\n");
       SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to do address conversion.");
     } else {
-      printf("INF: get_addr() inet_ntop success\n");
+      //printf("INF: get_addr() inet_ntop success\n");
     }
 
     jstring stAddr = (*jenv)->NewStringUTF(jenv, cAddr);
@@ -414,9 +416,9 @@ void sockaddr_in6_free(struct sockaddr_in6 *p);
 void check_receive_client(coap_context_t *ctx);
 void check_receive_server(coap_context_t *ctx);
 
-%javaconst(1);
+/* %javaconst(1); */
 
-#define      PF_INET         2       /* IP protocol family.  */
-#define      PF_INET6        10      /* IP version 6.  */
-#define      AF_INET         PF_INET
-#define      AF_INET6        PF_INET6
+/* #define      PF_INET         2       /\* IP protocol family.  *\/ */
+/* #define      PF_INET6        10      /\* IP version 6.  *\/ */
+/* #define      AF_INET         PF_INET */
+/* #define      AF_INET6        PF_INET6 */

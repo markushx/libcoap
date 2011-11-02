@@ -29,7 +29,6 @@ LOCAL_MODULE          := coap
 #LOCAL_MODULE_FILENAME := libcoap
 
 LOCAL_SRC_FILES       := pdu.c net.c debug.c encode.c uri.c list.c subscribe.c str.c coap_wrap.c
-#LOCAL_SRC_FILES       := pdu.c net.c debug.c encode.c uri.c list.c subscribe.c str.c coap_wrap.c
 
 APP_STL := gnustl_static
 

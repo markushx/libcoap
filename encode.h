@@ -21,10 +21,12 @@
 #define _COAP_ENCODE_H_
 
 #ifndef IDENT_APPNAME
+#ifndef SWIG
 #if (BSD >= 199103)
 # include <string.h>
 #else
 # include <strings.h>
+#endif
 #endif
 #endif
 

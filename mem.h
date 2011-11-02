@@ -21,7 +21,9 @@
 #ifndef _COAP_MEM_H_
 #define _COAP_MEM_H_
 
+#ifndef SWIG
 #include <stdlib.h>
+#endif
 
 #define coap_malloc(size) malloc(size)
 #define coap_free(size) free(size)

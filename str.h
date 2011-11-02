@@ -20,8 +20,6 @@
 #ifndef _COAP_STR_H_
 #define _COAP_STR_H_
 
-#include <string.h>
-
 typedef struct {
   size_t length;		/* length of string */
   unsigned char *s;		/* string data */

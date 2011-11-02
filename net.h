@@ -20,14 +20,18 @@
 #ifndef _COAP_NET_H_
 #define _COAP_NET_H_
 
+#ifndef SWIG
 #include <stdlib.h>
+#endif
 #ifdef IDENT_APPNAME
 #include <lib6lowpan.h>
 typedef uint16_t ssize_t;
 #else
+#ifndef SWIG
 #include <string.h>
 #include <time.h>
 #include <netinet/in.h>
+#endif
 #endif
 
 #include "pdu.h"
