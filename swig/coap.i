@@ -102,6 +102,7 @@ jstring,
 
   // /usr/include
 #include "netdb.h"
+#include "linux/in6.h"
 #include <netinet/in.h>
 #include <sys/select.h>
   %}
@@ -127,9 +128,13 @@ jstring,
 %include "subscribe.h"
 %include "uri.h"
 
+%define __signed__
+signed
+%enddef
+
 // /usr/include
 //#include "netdb.h"
-
+#include "linux/in6.h"
 /*
 %javaconst(1);
 #include "bits/socket.h"
@@ -416,9 +421,9 @@ void sockaddr_in6_free(struct sockaddr_in6 *p);
 void check_receive_client(coap_context_t *ctx);
 void check_receive_server(coap_context_t *ctx);
 
-/* %javaconst(1); */
+%javaconst(1);
 
-/* #define      PF_INET         2       /\* IP protocol family.  *\/ */
-/* #define      PF_INET6        10      /\* IP version 6.  *\/ */
-/* #define      AF_INET         PF_INET */
-/* #define      AF_INET6        PF_INET6 */
+#define      PF_INET         2       /* IP protocol family. */
+#define      PF_INET6        10      /* IP version 6. */
+#define      AF_INET         PF_INET
+#define      AF_INET6        PF_INET6

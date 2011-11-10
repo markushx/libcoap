@@ -58,7 +58,7 @@ INTERFACE     = coap.i
 INTERFACEDIR  = swig/
 INTERFACEPATH = $(INTERFACEDIR)$(INTERFACE)
 #SWIGOPT    = -I/usr/include -I/usr/include/linux/ -I/usr/include/i386-linux-gnu
-SWIGOPT    = -I/home/mab/src/external/android_sdk/android-ndk-r6/platforms/android-3/arch-arm/usr/include -I/home/mab/src/external/android_sdk/android-ndk-r6/platforms/android-3/arch-arm/usr/include/linux
+SWIGOPT    = -I/home/thp/android-ndk-r6b/platforms/android-3/arch-arm/usr/include -I/home/thp/android-ndk-r6b/platforms/android-3/arch-arm/usr/include/linux
 #SWIG       = @SWIG@
 SWIG       = swig2.0
 

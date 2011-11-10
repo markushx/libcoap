@@ -99,6 +99,7 @@ coap_queue_t *coap_pop_next( coap_context_t *context );
 
 /* Creates a new coap_context_t object that will hold the CoAP stack status. If port is
  * set to zero, the next free port will be used as server port, starting with COAP_DEFAULT_PORT.  */
+typedef uint16_t in_port_t;
 coap_context_t *coap_new_context(in_port_t port);
 
 /* CoAP stack context must be released with coap_free_context() */
