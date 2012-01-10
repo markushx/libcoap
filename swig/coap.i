@@ -89,6 +89,7 @@ jstring,
  }
 
 %apply int { in_port_t };
+%apply long { time_t };
 %ignore coap_get_data;
 
 %{
