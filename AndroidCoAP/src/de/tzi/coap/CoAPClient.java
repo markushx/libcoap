@@ -12,12 +12,14 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.Toast;
 import android.util.Log;
-import de.tzi.coap.jni.sockaddr_in6;
+//import de.tzi.coap.jni.sockaddr_in6;
+import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
+
 public class CoAPClient extends Activity {
 
 	private static final String LOG_TAG = "CoAP";
 	static Random generator = new Random();
-	
+
 	static {
 		try{
 			Log.i(LOG_TAG, "static load library");
@@ -28,33 +30,34 @@ public class CoAPClient extends Activity {
 			Log.e(LOG_TAG, "static load library fail");
 		}
 	}
+
+
+	private coap_pdu_t coap_new_request(int methodid, Vector<CoapJavaOption> optlist, String payload) {
+
+		coap_pdu_t pdu = coap.coap_new_pdu();
+		if (pdu == null) {
+			System.out.println("INF: could not create pdu");
+			return pdu;
+		}
+
+		System.out.println("INF: set header values");
+		pdu.getHdr().setVersion(coapConstants.COAP_DEFAULT_VERSION);
+		pdu.getHdr().setType(coapConstants.COAP_MESSAGE_CON);
+		pdu.getHdr().setCode(methodid);
+		pdu.getHdr().setId(generator.nextInt(0xFFFF));
+
+		for (int i=0; i<optlist.size(); i++) {
+			coap.coap_add_option(pdu, optlist.get(i).getType(), optlist.get(i).getLength(), optlist.get(i).getValue());
+		}
+
+		if (payload != null) {
+			coap.coap_add_data(pdu, payload.length(), payload);
+		}
+
+		System.out.println("INF: created pdu");
+		return pdu;
+	}
 	
-	
-    private coap_pdu_t coap_new_request(int methodid, Vector<CoapJavaOption> optlist, String payload) {
-
-	coap_pdu_t pdu = coap.coap_new_pdu();
-	if (pdu == null) {
-	    System.out.println("INF: could not create pdu");
-	    return pdu;
-	}
-
-	System.out.println("INF: set header values");
-	pdu.getHdr().setVersion(coapConstants.COAP_DEFAULT_VERSION);
-	pdu.getHdr().setType(coapConstants.COAP_MESSAGE_CON);
-	pdu.getHdr().setCode(methodid);
-	pdu.getHdr().setId(generator.nextInt(0xFFFF));
-
-	for (int i=0; i<optlist.size(); i++) {
-	    coap.coap_add_option(pdu, optlist.get(i).getType(), optlist.get(i).getLength(), optlist.get(i).getValue());
-	}
-
-	if (payload != null) {
-	    coap.coap_add_data(pdu, payload.length(), payload);
-	}
-
-	System.out.println("INF: created pdu");
-	return pdu;
-    }
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -66,7 +69,6 @@ public class CoAPClient extends Activity {
 		Button run = (Button)findViewById(R.id.button1);
 		run.setOnClickListener(new OnClickListener() {
 
-			@Override
 			public void onClick(View arg0) {
 
 				//				new runClient().execute(null);
@@ -152,7 +154,8 @@ public class CoAPClient extends Activity {
 		}
 
 		// set destination
-		sockaddr_in6 dst;
+		//sockaddr_in6 dst;
+		SWIGTYPE_p_sockaddr_in6 dst;
 		dst = coap.sockaddr_in6_create(coapConstants.AF_INET6,
 				port,
 				destination);
