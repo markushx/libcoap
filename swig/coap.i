@@ -328,14 +328,14 @@ signed
       /* find Java Client/Server class */
       cls = (*jenv)->GetObjectClass(jenv, cached_client_server);
       if (cls == NULL) {
-	printf("ERR: Client/Server class not found.\n");
+	//printf("ERR: Client/Server class not found.\n");
       }
 
       methodid = (*jenv)->GetMethodID(jenv, cls, "coap_send_impl",
 				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/sockaddr_in6;Lde/tzi/coap/jni/coap_pdu_t;I)V");
 
       if (methodid == NULL) {
-	printf("ERR: messageHandler not found.\n");
+	//printf("ERR: messageHandler not found.\n");
 	return;
       } else {
 	//printf("INF: messageHandler found.\n");
@@ -348,17 +348,17 @@ signed
 					ctx_obj, dst_obj, pdu_obj, free);
 
       if ((*jenv)->ExceptionOccurred(jenv)) {
-	printf("ERR: Exception occurred.\n");
+	//printf("ERR: Exception occurred.\n");
 	SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "Exception in callback.");
 	return;
       }
       //printf("INF: ~callback\n");
 
     } else {
-      printf("ERR: could not attach to thread.\n");
+      //printf("ERR: could not attach to thread.\n");
     }
     //printf("INF: ~message_handler_proxy()\n");
-    fflush(stdout);
+    //fflush(stdout);
   }
 
   jbyteArray get_bytes(coap_pdu_t pdu) {
@@ -389,23 +389,24 @@ signed
     coap_opt_t *opt;
 
     if ( length < 0 ) {
-      printf("coap_read: recvfrom");
+      //printf("coap_read: recvfrom");
       return;
     }
 
     if ( length < sizeof(coap_hdr_t)) {
-      printf("coap_read: discarded invalid frame (too small)\n" );
+      //printf("coap_read: discarded invalid frame (too small)\n" );
       return;
     }
 
     node = coap_new_node();
-    if ( !node )
-       printf("INF: coap_read: could not create node\n");
+    if ( !node ) {
+      //printf("INF: coap_read: could not create node\n");
+    }
 
     node->pdu = coap_new_pdu();
     if ( !node->pdu ) {
       coap_delete_node( node );
-      printf("INF: coap_read: !node->pdu: coap_delete_node\n");
+      //printf("INF: coap_read: !node->pdu: coap_delete_node\n");
     }
 
     time( &node->t );
@@ -417,7 +418,7 @@ signed
     options_end( node->pdu, &opt );
 
     if (node->pdu->hdr->version != COAP_DEFAULT_VERSION ) {
-      printf("coap_read: discarded invalid frame (wrong version 0x%x)\n", node->pdu->hdr->version );
+      //printf("coap_read: discarded invalid frame (wrong version 0x%x)\n", node->pdu->hdr->version );
       coap_delete_node( node );
       return;
     }
@@ -433,9 +434,9 @@ signed
 
     static char addr[INET6_ADDRSTRLEN];
     if ( inet_ntop(src.sin6_family, &src.sin6_addr, addr, INET6_ADDRSTRLEN) == 0 ) {
-      printf("coap_read: inet_ntop failed");
+      //printf("coap_read: inet_ntop failed");
     } else {
-      printf("** received from [%s]:%d:\n  ",addr,ntohs(src.sin6_port));
+      //printf("** received from [%s]:%d:\n  ",addr,ntohs(src.sin6_port));
     }
 
     coap_show_pdu( node->pdu );
