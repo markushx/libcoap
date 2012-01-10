@@ -99,7 +99,9 @@ coap_queue_t *coap_pop_next( coap_context_t *context );
 
 /* Creates a new coap_context_t object that will hold the CoAP stack status. If port is
  * set to zero, the next free port will be used as server port, starting with COAP_DEFAULT_PORT.  */
+#ifdef JAVA
 typedef uint16_t in_port_t;
+#endif
 coap_context_t *coap_new_context(in_port_t port);
 
 /* CoAP stack context must be released with coap_free_context() */
@@ -126,7 +128,9 @@ coap_tid_t coap_retransmit( coap_context_t *context, coap_queue_t *node );
  * and a new node with the parsed PDU is added to the receive queue in the specified context
  * object.
  */
+#ifndef JAVA
 int coap_read( coap_context_t *context );
+#endif
 #endif
 
 /** Removes transaction with specified id from given queue. Returns 0 if not found, 1 otherwise. */

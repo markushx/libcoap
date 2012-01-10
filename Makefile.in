@@ -58,7 +58,8 @@ INTERFACE     = coap.i
 INTERFACEDIR  = swig/
 INTERFACEPATH = $(INTERFACEDIR)$(INTERFACE)
 #SWIGOPT    = -I/usr/include -I/usr/include/linux/ -I/usr/include/i386-linux-gnu
-SWIGOPT    = -I/home/thp/android-ndk-r6b/platforms/android-3/arch-arm/usr/include -I/home/thp/android-ndk-r6b/platforms/android-3/arch-arm/usr/include/linux
+#SWIGOPT    = -I/home/thp/android-ndk-r6b/platforms/android-3/arch-arm/usr/include -I/home/thp/android-ndk-r6b/platforms/android-3/arch-arm/usr/include/linux
+SWIGOPT    = -I/home/mab/src/external/android_sdk/android-ndk-r6b/platforms/android-3/arch-arm/usr/include -I/home/mab/src/external/android_sdk/android-ndk-r6b/platforms/android-3/arch-arm/usr/include/linux
 #SWIG       = @SWIG@
 SWIG       = swig2.0
 
@@ -249,8 +250,8 @@ JAVACFLAGS = -fPIC
 java: $(SRCS)
 	echo "$(SRCS)"
 	mkdir -p swig/java/de/tzi/coap/jni/
-	$(SWIG) -java -includeall -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ISRCS) $(INTERFACEPATH)
-	$(CC) -c $(CCSHARED) $(CFLAGS) $(JAVACFLAGS) $(SRCS) swig/java/$(ISRCS) $(INCLUDES) $(JAVA_INCLUDE)
+	$(SWIG) -java -includeall -ignoremissing -DJAVA $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ISRCS) $(INTERFACEPATH)
+	$(CC) -c $(CCSHARED) $(CFLAGS) -DJAVA $(JAVACFLAGS) $(SRCS) swig/java/$(ISRCS) $(INCLUDES) $(JAVA_INCLUDE)
 	$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
 	@JAVAC@ -sourcepath ./swig/java/ -d ./swig/java swig/java/de/tzi/coap/jni/*.java;
 	#jar cvf examples/java/jnicoap.jar -C swig/java/ de/tzi/coap/jni/*.class

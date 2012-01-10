@@ -305,6 +305,7 @@ coap_free_context( coap_context_t *context ) {
 #endif
 
 #ifndef IDENT_APPNAME
+#ifndef JAVA
 /* releases space allocated by PDU if free_pdu is set */
 coap_tid_t
 coap_send_impl( coap_context_t *context, const struct sockaddr_in6 *dst, coap_pdu_t *pdu,
@@ -339,6 +340,7 @@ coap_send_impl( coap_context_t *context, const struct sockaddr_in6 *dst, coap_pd
 
   return ntohs(pdu->hdr->id);
 }
+#endif
 
 coap_tid_t
 coap_send( coap_context_t *context, const struct sockaddr_in6 *dst, coap_pdu_t *pdu ) {
@@ -410,6 +412,7 @@ order_transaction_id( coap_queue_t *lhs, coap_queue_t *rhs ) {
 }  
 
 #ifndef IDENT_APPNAME
+#ifndef JAVA
 int
 coap_read( coap_context_t *ctx ) {
   static char buf[COAP_MAX_PDU_SIZE];
@@ -484,6 +487,7 @@ coap_read( coap_context_t *ctx ) {
 
   return 0;
 }
+#endif
 #endif
 
 int
