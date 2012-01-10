@@ -20,6 +20,7 @@ include $(CLEAR_VARS)
 #LOCAL_C_INCLUDES      := $(TARGET_C_INCLUDES)/linux $(TARGET_C_INCLUDES)/sys
 #LOCAL_EXPORT_CFLAGS   := -NDEBUG=1
 
+LOCAL_CFLAGS          := -DJAVA
 #LOCAL_CFLAGS          := -nostdlib -DANDROID_NDK
 # -fno-short-wchar -fno-strength-reduce -fno-strict-aliasing
 # -fshort-wchar -Wno-multichar -D_ANDROID
