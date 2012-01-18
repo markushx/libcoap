@@ -1,12 +1,10 @@
 
-modify SWIGOPT in Makefile.in to fit for your NDK dir
-
+libcoap/$ export ANDROID_NDK_DIR=/home/mab/src/external/android_sdk/android-ndk-r6/
 libcoap/$ autoconf
 libcoap/$ ./configure
 libcoap/$ make java_clean && make java
-cp examples/java/jnicoap.jar AndroidCoAP/libs/
 libcoap/$ cd AndroidCoAP
 
-AndroidCoAP/$ ndk-build
+AndroidCoAP/$ $ANDROID_NDK_DIR/ndk-build
 
 -> eclipse
