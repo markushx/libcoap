@@ -318,7 +318,8 @@ signed
       *((coap_pdu_t **)&jpdu) = (coap_pdu_t *) pdu;
       pdu_obj = (*jenv)->NewObject(jenv, pdu_cls, pdu_con, jpdu, NULL);
 
-      dst_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/sockaddr_in6");
+      //dst_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/sockaddr_in6");
+      dst_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/SWIGTYPE_p_sockaddr_in6");
       dst_con = (*jenv)->GetMethodID(jenv, dst_cls, "<init>", "(JZ)V");
       dst_fid = (*jenv)->GetFieldID(jenv, dst_cls, "swigCPtr", "J");
       *((struct sockaddr_in6 **)&jdst) = (struct sockaddr_in6 *) dst;
@@ -331,8 +332,10 @@ signed
 	//printf("ERR: Client/Server class not found.\n");
       }
 
+      /*methodid = (*jenv)->GetMethodID(jenv, cls, "coap_send_impl",
+	"(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/sockaddr_in6;Lde/tzi/coap/jni/coap_pdu_t;I)V");*/
       methodid = (*jenv)->GetMethodID(jenv, cls, "coap_send_impl",
-				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/sockaddr_in6;Lde/tzi/coap/jni/coap_pdu_t;I)V");
+				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/SWIGTYPE_p_sockaddr_in6;Lde/tzi/coap/jni/coap_pdu_t;I)V");
 
       if (methodid == NULL) {
 	//printf("ERR: messageHandler not found.\n");
@@ -448,6 +451,8 @@ signed
 
     //printf("INF: sockaddr_in6_create()\n");
 
+    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+
     stAddr = (char *)(*jenv)->GetStringUTFChars(jenv, addr, NULL);
     if (stAddr == NULL) {
       //printf("ERR: stAddr == NULL\n");
@@ -471,6 +476,8 @@ signed
   jstring get_addr(struct sockaddr_in6 src) {
     static char cAddr[INET6_ADDRSTRLEN];
     //printf("INF: get_addr()\n");
+
+    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
     if ( inet_ntop(src.sin6_family, &src.sin6_addr, cAddr, INET6_ADDRSTRLEN) == 0 ) {
       //printf("INF: get_addr() inet_ntop fail\n");
