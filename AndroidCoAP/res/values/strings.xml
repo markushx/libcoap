@@ -20,10 +20,10 @@
     </string-array>
 
     <string name="IP">IP:</string>
-    <string name="hintIP">e.g. fec0::1</string>
+    <string name="hintIP">fec0::3</string>
     <string name="defaulIP">fec0::3</string>
     <string name="port">"Port: "</string>
-    <string name="hintPort">e.g. 61616</string>
+    <string name="hintPort">61616</string>
     <string name="defaultPort">61616</string>
     <string name="menu_item_edit_resources">Edit Resources</string>
     <string name="save">Save</string>
