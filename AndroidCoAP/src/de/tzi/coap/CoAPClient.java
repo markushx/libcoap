@@ -31,12 +31,13 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.util.Log;
 
-import de.tzi.coap.jni.*;
 import de.tzi.coap.jni.coap;
 import de.tzi.coap.jni.coapConstants;
 import de.tzi.coap.jni.coap_context_t;
 import de.tzi.coap.jni.coap_pdu_t;
 import de.tzi.coap.jni.coap_listnode;
+import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
+
 /*
  * @author Markus Becker <mab@comnets.uni-bremen.de>
  * @author Thomas Poetsch <thp@comnets.uni-bremen.de>
@@ -454,8 +455,10 @@ public class CoAPClient extends Activity {
 	public void coap_send_impl(coap_context_t ctx, SWIGTYPE_p_sockaddr_in6 dst, 
 			coap_pdu_t pdu,
 			int free_pdu) {
+		// if you change the signature (name or parameters) of this 
+		// function, the swig interface needs to be changed as well
+		
 		Log.i(LOG_TAG, "INF: callback coap_send_impl @ "+System.currentTimeMillis());
-
 		try {
 			InetAddress IPAddress = InetAddress.getByName(coap.get_addr(dst));
 			lowerSend(coap.get_bytes(pdu), IPAddress);
