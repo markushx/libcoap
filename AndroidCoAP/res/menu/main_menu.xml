@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/menu_item_settings"
+        android:icon="@drawable/ic_menu_preferences"
+        android:title="@string/menu_item_edit_resources">
+    </item>
+    <item
+        android:id="@+id/menu_item_ip"
+        android:icon="@drawable/ic_menu_notifications"
+        android:title="@string/menu_item_ip">
+    </item>
+    <item
+        android:id="@+id/menu_item_about"
+        android:icon="@drawable/ic_menu_info_details"
+        android:title="@string/menu_item_about">
+    </item>
+
+</menu>
