@@ -451,7 +451,7 @@ public class CoAPClient extends Activity {
 	}
 
 	//JNI callback to replace C socket with Java DatagramSocket
-	public void coap_segnd_impl(coap_context_t ctx, SWIGTYPE_p_sockaddr_in6 dst, 
+	public void coap_send_impl(coap_context_t ctx, SWIGTYPE_p_sockaddr_in6 dst, 
 			coap_pdu_t pdu,
 			int free_pdu) {
 		Log.i(LOG_TAG, "INF: callback coap_send_impl @ "+System.currentTimeMillis());
