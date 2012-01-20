@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
+import android.util.Log;
+
 import de.tzi.coap.jni.coap;
 import de.tzi.coap.jni.coapConstants;
 import de.tzi.coap.jni.coap_context_t;
@@ -21,7 +23,7 @@ public class LowerReceive extends Thread {
 	}
 
 	public void run() {
-		System.out.println(RCI+"INF: run()");
+		Log.i(CoAPClient.LOG_TAG, "INF: LowerRequest run()");
 		try {
 			receiveLoop();
 		} catch (IOException e) {
@@ -31,7 +33,7 @@ public class LowerReceive extends Thread {
 	}
 
 	public void requestStop() {
-		System.out.println(RCI+"INF: requestStop()");
+		Log.i(CoAPClient.LOG_TAG, "INF: LowerRequest requestStop");
 		doStop = true;
 	}
 
@@ -40,7 +42,7 @@ public class LowerReceive extends Thread {
 		byte[] receiveData = new byte[coapConstants.COAP_MAX_PDU_SIZE];
 		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 		while (!doStop) {
-			System.out.println(RCI+"INF: wating for incoming messages...");
+			Log.i(CoAPClient.LOG_TAG, "INF: LowerRequest: waiting for incoming message...");
 			clientSocket.receive(receivePacket);
 
 			src = coap.sockaddr_in6_create(coapConstants.AF_INET6, receivePacket.getPort(),
@@ -56,7 +58,7 @@ public class LowerReceive extends Thread {
 			}
 
 		}
-
-		System.out.println(RCI+"INF: receiveLoop finshed.");
+		Log.i(CoAPClient.LOG_TAG, "INF: LowerRequest: receiveLoop finished");
+//		System.out.println(RCI+"INF: receiveLoop finshed.");
 	}
 }
