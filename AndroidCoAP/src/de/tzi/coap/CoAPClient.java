@@ -112,13 +112,10 @@ public class CoAPClient extends Activity {
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
-
-		//TODO: re-enable Retransmitter
-		//		rt = new Retransmitter(ctx);
-		//		rt.start();
+		
 	}
 
-	void setStatus(CharSequence cs) {
+	static void setStatus(CharSequence cs) {
 		statusText.setText(cs);
 	}
 	
@@ -163,14 +160,17 @@ public class CoAPClient extends Activity {
 		sendButton = (Button)findViewById(R.id.button);
 		sendButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				//thp: execute: send request
+				
 				if (ipText.getText().length() != 0) {
 
+					responseTextView.setText("");
 					Log.d("CoAP", "start LowerReceive");
 					lr = new LowerReceive(ctx, clientSocket);
 					lr.start();
 					Log.d("CoAP", "LowerReceive started");
-
+					rt = new Retransmitter(ctx);
+					rt.start();
+					
 					Log.d("CoAP", "sendRequest");
 					sendRequest(ipText.getText().toString());
 					Log.d("CoAP", "sendRequest~");
@@ -252,6 +252,10 @@ public class CoAPClient extends Activity {
 		Log.i(LOG_TAG, "INF: free context");
 		coap.coap_free_context(ctx);
 		Log.i(LOG_TAG, "INF: free context~");
+		
+		//stop all threads, just in case
+//		lr.requestStop();
+//		rt.requestStop();
 	}
 
 	@Override
@@ -433,11 +437,11 @@ public class CoAPClient extends Activity {
 		return;
 	}
 
-	//message handler to update UI thread
-	private Handler messageUIHandler = new Handler() {
+	//message handler to update UI thread for received messages
+	private Handler messageUIHandlerReceived = new Handler() {
 		public void handleMessage(Message msg) {
 
-			setStatus("CoAP Response ("+msg.arg1+") received.");
+			setStatus("CoAP Response (MID "+msg.arg1+") received.");
 			
 			short[] pdudata = (short[])msg.obj;
 
@@ -455,6 +459,21 @@ public class CoAPClient extends Activity {
 			}
 
 			uriHM.clear();
+		}
+	};
+	
+	//message handler to update UI thread for retransmissions
+	public static Handler messageUIHandlerRetransmission = new Handler() {
+		public void handleMessage(Message msg) {
+
+			if (msg.arg1 < coapConstants.COAP_DEFAULT_MAX_RETRANSMIT) {
+				setStatus("Retransmission #"+msg.arg1);
+			} else {
+				setStatus("Request aborted... ");
+			}
+			
+	
+//			super.handleMessage(msg);
 		}
 	};
 
@@ -513,10 +532,10 @@ public class CoAPClient extends Activity {
 			Log.i(LOG_TAG, "INF: ****** data:'" + pdudata + "'" +len);
 			Log.i(LOG_TAG, "INF: ****** data:' URI" + node.getPdu().getHdr().getId());
 			
-			Message msg = messageUIHandler.obtainMessage();
+			Message msg = messageUIHandlerReceived.obtainMessage();
 			msg.arg1 = node.getPdu().getHdr().getId();
 			msg.obj = pdudata;
-			messageUIHandler.sendMessage(msg);
+			messageUIHandlerReceived.sendMessage(msg);
 
 			// responseTextView.setText(node.getPdu().getData());
 			// System.out.println(LI+"INF: "+coap.get_addr(node.getRemote()));
