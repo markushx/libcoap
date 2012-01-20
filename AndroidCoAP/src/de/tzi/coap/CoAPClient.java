@@ -2,9 +2,14 @@ package de.tzi.coap;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.Vector;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -35,6 +40,7 @@ import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 import de.tzi.coap.jni.coap;
@@ -76,7 +82,7 @@ public class CoAPClient extends Activity {
 
 	Button btn_send;
 	
-	CheckBox continuousCB;
+	CheckBox continuous;
 	EditText seconds;
 	
 	static TextView statusText;
@@ -87,8 +93,21 @@ public class CoAPClient extends Activity {
 	WebView wv;
 	//~ UI elements
 	
-	String uris [];	
+	// storage for data received
+    JSONArray dataTemp = new JSONArray();
+    JSONArray dataHum = new JSONArray();
+    JSONArray dataVolt = new JSONArray();
 
+    JSONObject temp = new JSONObject();
+    JSONObject hum = new JSONObject();
+    JSONObject volt = new JSONObject();
+    // ~storage for data received
+
+    FlotGraphHandler mGraphHandler;
+
+	String uris [];	
+	private Date startDate;
+	
 	// CoAP specifics
 	static Random generateRand = new Random();
 	coap_context_t ctx;
@@ -158,7 +177,7 @@ public class CoAPClient extends Activity {
 
 		btn_send = (Button)findViewById(R.id.btn_send);
 		
-		continuousCB = (CheckBox) findViewById(R.id.continuous);
+		continuous = (CheckBox) findViewById(R.id.continuous);
 		seconds = (EditText)findViewById(R.id.seconds);
 		
 		statusText = (TextView) findViewById(R.id.textStatus);
@@ -169,6 +188,23 @@ public class CoAPClient extends Activity {
 		wv = (WebView)findViewById(R.id.wv1);
 		//~ setup UI elements
 		
+		// storage for data received
+	    try {
+	        temp.put("color", "#d1002c");
+	        temp.put("label", "Temperature (degC)");
+	        hum.put("color", "#0066ff");
+	        hum.put("label", "Humidity (%)");
+	        volt.put("color", "#08ff00");
+	        volt.put("label", "Voltage (V)");
+	    } catch (JSONException e) {
+			Toast toast = Toast.makeText(getApplicationContext(),
+					"JSON parsing error.", 
+					Toast.LENGTH_LONG);
+			toast.show();
+			e.printStackTrace();
+	    }
+	    // ~storage for data received
+	 
 		setup_coap();
 
 		// GET/PUT -------
@@ -232,6 +268,7 @@ public class CoAPClient extends Activity {
 					wv.getSettings().setJavaScriptEnabled(true);
 					wv.loadUrl("file:///android_asset/flot/stats_graph.html");
 
+					startDate  = new Date(); 
 					reqthr = new RequesterThread();
 					reqthr.start();
 					
@@ -246,7 +283,7 @@ public class CoAPClient extends Activity {
 				}
 			}
 		};
-		continuousCB.setOnCheckedChangeListener(cont_listener);
+		continuous.setOnCheckedChangeListener(cont_listener);
 		
 		// --------
 		settings = getSharedPreferences(PREFS_NAME, 0);
@@ -536,8 +573,53 @@ public class CoAPClient extends Activity {
 				} else if (uriHM.get(msg.arg1).equals("rt")) {
 					responseTextView.append(shortArray2String(pdudata)+"\n");
 				} else {
-					responseTextView.append("URI not found");
+					responseTextView.append("URI not found\n");
 				}
+				
+				int temp_val = 30000;
+				int hum_val  = 50;
+				int volt_val = 300;
+				
+				if (continuous.isChecked()) {
+					JSONArray result = new JSONArray();
+
+					JSONArray entryTemp = new JSONArray();
+					JSONArray entryHum = new JSONArray();
+					JSONArray entryVolt = new JSONArray();
+					
+					float diff = (new Date()).getTime() - startDate.getTime();
+					
+					try {
+						entryTemp.put(diff / 1000);
+						entryHum.put(diff / 1000);
+						entryVolt.put(diff / 1000);
+
+						entryTemp.put((float) (temp_val / 100 - 273.15));
+						dataTemp.put(entryTemp);
+						//temp.putOpt("label", "&nbsp;Temperature <br> &nbsp;("+temp_val+" degC)");
+						temp.put("data", dataTemp);
+
+						entryHum.put((float) hum_val / 100);
+						dataHum.put(entryHum);
+						//hum.putOpt("label", "&nbsp;Humidity <br> &nbsp;("+hum_val+" %)");
+						hum.put("data", dataHum);
+
+						entryVolt.put((float) volt_val / 100);
+						dataVolt.put(entryVolt);
+						//volt.putOpt("label", "&nbsp;Voltage <br> &nbsp;("+volt_val+" V)");
+						volt.put("data", dataVolt);
+
+						result.put(temp);
+						result.put(hum);
+						result.put(volt);
+
+						updateMeasurements(result);
+					} catch (JSONException e) {
+		    			Toast toast = Toast.makeText(getApplicationContext(),
+		    					"JSON exception.", 
+		    					Toast.LENGTH_LONG);
+					}
+				}				
 			} else {
 				responseTextView.append("URI not available");
 			}
@@ -560,6 +642,20 @@ public class CoAPClient extends Activity {
 //			super.handleMessage(msg);
 		}
 	};
+
+    protected void updateMeasurements(JSONArray... data) {
+            if (data != null && data.length > 0) {
+                    mGraphHandler = new FlotGraphHandler(this, wv, data[0],
+                    		DateFormat.format("hh:mm:ss", startDate).toString());
+                    
+                    wv.addJavascriptInterface(mGraphHandler, "testhandler");
+                    wv.loadUrl("file:///android_asset/flot/stats_graph.html");
+            } else {
+    			Toast toast = Toast.makeText(getApplicationContext(),
+    					"JSON data has errors.", 
+    					Toast.LENGTH_LONG);
+            }
+    }
 
 	String shortArray2String(short[] arr) {
 		StringBuffer sb = new StringBuffer();
