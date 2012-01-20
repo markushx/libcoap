@@ -22,9 +22,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.webkit.WebView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -186,20 +189,26 @@ public class CoAPClient extends Activity {
 		// CONTINUOUS -------
 		final CheckBox continuousCB = (CheckBox) findViewById(R.id.continuous);
 		
-		OnClickListener cont_listener = new OnClickListener() {
-			public void onClick(View v) {
-				// Perform action on clicks
-				RadioButton rb = (RadioButton) v;
+		OnCheckedChangeListener cont_listener = new OnCheckedChangeListener() {
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+				if (isChecked) {
+					Log.d("CoAP", "-> continuous mode");
+					findViewById(R.id.scrollView1).setVisibility(View.GONE);
+					WebView wv = (WebView)findViewById(R.id.wv1); 
+					wv.setVisibility(View.VISIBLE);
+					wv.getSettings().setJavaScriptEnabled(true);
+					wv.loadUrl("file:///android_asset/flot/stats_graph.html");
 
-				if (rb.getId() == R.id.rbPut) {
-					payloadText.setVisibility(View.VISIBLE);
 				} else {
-					payloadText.setVisibility(View.GONE);
+					Log.d("CoAP", "-> single shot mode");
+					findViewById(R.id.scrollView1).setVisibility(View.VISIBLE);
+					findViewById(R.id.wv1).setVisibility(View.GONE);
 				}
 			}
 		};
-		continuousCB.setOnClickListener(cont_listener);
-		
+		continuousCB.setOnCheckedChangeListener(cont_listener);
+		Log.d("CoAP", "setOnChecked");
 		// --------
 		statusText = (TextView) findViewById(R.id.textStatus); 
 
@@ -352,6 +361,35 @@ public class CoAPClient extends Activity {
 		return strArray;
 	}
 
+	class RequesterThread extends Thread {
+		boolean doStop = false;
+		
+		public void run() {
+			Log.i(CoAPClient.LOG_TAG, "INF: RequesterThread run()");
+			requestLoop();
+		}
+		
+		public void requestStop() {
+			Log.i(CoAPClient.LOG_TAG, "INF: RequesterThread requestStop");
+			doStop = true;
+		}
+		
+		private void requestLoop() {
+			while (!doStop) {
+				Log.i(CoAPClient.LOG_TAG, "INF: RequesterThread: next request...");
+				sendRequest(ipText.getText().toString());
+				try {
+					int inter_req_sec = new Integer(
+							((EditText)findViewById(R.id.seconds)).getText().toString()
+							).intValue();
+					Thread.sleep(inter_req_sec*1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 	private void sendRequest(String destination) {
 		Vector<CoapJavaOption> optionList = new Vector<CoapJavaOption>();
 
@@ -433,7 +471,7 @@ public class CoAPClient extends Activity {
 		return;
 	}
 
-	//message handler to update UI thread
+	// message handler to update UI thread
 	private Handler messageUIHandler = new Handler() {
 		public void handleMessage(Message msg) {
 
