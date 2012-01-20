@@ -2,6 +2,7 @@ package de.tzi.coap;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Vector;
 
@@ -48,6 +49,8 @@ import de.tzi.coap.jni.coap_uri_t;
 public class CoAPClient extends Activity {
 
 	public static final String LOG_TAG = "CoAP";
+
+	HashMap<Integer, String> uriHM = new HashMap(); 
 
 	public static final String PREFS_NAME = "MyCoapPrefs";
 	static final int ABOUT_DIALOG = 0;
@@ -120,8 +123,23 @@ public class CoAPClient extends Activity {
 		public void handleMessage(android.os.Message msg) {
 			if (msg.what == 0) {
 				// updates the TextView with the received text
-				statusText.setText(msg.getData().getString("text"));
+				setStatus(msg.getData().getString("text"));
 			}
+		};
+	};
+
+	void setStatus(CharSequence cs) {
+		statusText.setText(cs);
+	}
+	
+	//TODO: do in onDestroy()?
+	protected void finalize() throws Throwable {
+		try {
+			// free context
+			Log.i(LOG_TAG, "INF: finalize");
+			coap.coap_free_context(ctx);
+		} finally {
+			super.finalize();
 		}
 	};
 
@@ -233,13 +251,8 @@ public class CoAPClient extends Activity {
 		Log.i(LOG_TAG, "INF: free context");
 		coap.coap_free_context(ctx);
 		Log.i(LOG_TAG, "INF: free context~");
-
-		// Kill process if not terminated yet
-		//		if (process != null) {
-		//			process.destroy();
-		//		}
 	}
-	
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
@@ -338,33 +351,6 @@ public class CoAPClient extends Activity {
 		return strArray;
 	}
 
-	private class runClient extends AsyncTask<String, String, String> {
-
-		@Override
-		protected void onPreExecute() {
-			statusText.setText("Sending request...");
-		}
-
-		protected String doInBackground(String... s) {
-			Log.i(LOG_TAG, "INF: sendRequest");
-			//			sendRequest(ipText.getText().toString());
-			//			lr = new LowerReceive(ctx, clientSocket);
-			//			lr.execute("");
-			//			Log.i(LOG_TAG, "INF: sendRequest~");
-			return null;
-		}
-
-		protected void onProgressUpdate(String... progress) {
-			//				errTextView.setText(""+progress[0]);
-		}
-
-		protected void onPostExecute(String result) {
-			Log.i(LOG_TAG, "INF: onPost runClient");
-			//			statusText.setText("Request sent...");
-			//							toggleButton.setChecked(false);
-		}
-	}
-
 	private void sendRequest(String destination) {
 		Vector<CoapJavaOption> optionList = new Vector<CoapJavaOption>();
 
@@ -375,7 +361,7 @@ public class CoAPClient extends Activity {
 
 		String uri = "l";
 		uri = spinner.getSelectedItem().toString();
-		Log.i(LOG_TAG, "INF: URI "+uri);
+		//		Log.i(LOG_TAG, "INF: URI "+uri);
 		//String uri = "lipsum";
 
 		optionList.add(contentTypeOption);
@@ -398,6 +384,8 @@ public class CoAPClient extends Activity {
 			return;
 		}
 
+		uriHM.put(pdu.getHdr().getId(), uri);
+
 		// set destination
 		SWIGTYPE_p_sockaddr_in6 dst = null;
 		dst = coap.sockaddr_in6_create(coapConstants.AF_INET6, coapConstants.COAP_DEFAULT_PORT,
@@ -410,6 +398,8 @@ public class CoAPClient extends Activity {
 		Log.i(LOG_TAG, "INF: send_confirmed~");
 		// free destination
 		coap.sockaddr_in6_free(dst);
+		
+		setStatus("CoAP request sent.");
 	}
 
 	//JNI callback to replace C socket with Java DatagramSocket
@@ -443,33 +433,25 @@ public class CoAPClient extends Activity {
 		return;
 	}
 
-	//	public class MessageHandlerRunnable extends Thread {
-	//		coap_context_t ctx;
-	//		coap_listnode node;
-	//		String data;
-	//		
-	//		public MessageHandlerRunnable(coap_context_t ctx,
-	//				coap_listnode node,
-	//				String data) {
-	//			this.ctx = ctx;
-	//			this.node = node;
-	//			this.data = data;
-	//		}
-	//
-	//		public void run() {
-	//			Log.i(LOG_TAG, "INF: MessageHandlerRunnable: run");
-	//			responseTextView.setText(node.getPdu().getData());
-	//		}
-	//	}
-
 	//message handler to update UI thread
 	private Handler messageHandler = new Handler() {
 		public void handleMessage(Message msg) {
 
 			short[] pdudata = (short[])msg.obj;
 
-			responseTextView.append(shortArray2String(pdudata)+"\n");
-			responseTextView.append(""+(int)pdudata[0]);
+			if (!uriHM.isEmpty()) {
+				//TODO: read content-type and decide with switch/case
+				if (uriHM.get(msg.arg1).equals("l")) {
+					responseTextView.append(""+(int)pdudata[0] + "\n");
+				} 
+				if (uriHM.get(msg.arg1).equals("rt")) {
+					responseTextView.append(shortArray2String(pdudata)+"\n");
+				}
+			} else {
+				responseTextView.append("URI not found");
+			}
+
+			uriHM.clear();
 		}
 	};
 
@@ -501,8 +483,6 @@ public class CoAPClient extends Activity {
 		//				+ node.getPdu().getHdr().getCode() + " id:"
 		//				+ node.getPdu().getHdr().getId());
 
-
-
 		if (node.getPdu().getHdr().getVersion() != coapConstants.COAP_DEFAULT_VERSION) {
 			Log.w(LOG_TAG, "WARN: dropped packet with unknown version "+
 					node.getPdu().getHdr().getVersion()+"\n");
@@ -521,24 +501,20 @@ public class CoAPClient extends Activity {
 
 		/* just print payload */
 		if (node.getPdu().getHdr().getCode() == coapConstants.COAP_RESPONSE_200) {
-			//String pdudata = node.getPdu().getData();
-			//String pdudata = "";
+
 			short[] pdudata = new short[node.getPdu().getLength()];
 
 			int len = coap.coap_get_data_java(node.getPdu(), pdudata);
-			Log.i(LOG_TAG, "INF: ****** data:'" + pdudata + "'" +len);
 
-			coap_uri_t uri = null;
-			//			coap.coap_get_request_uri(node.getPdu(), uri);
-			//			Log.i(LOG_TAG, "INF: ****** data:' URI" + uri.getPath());
-			//			msg.arg1 = coap.coap_get_resource(ctx, arg1)
+			Log.i(LOG_TAG, "INF: ****** data:'" + pdudata + "'" +len);
+			Log.i(LOG_TAG, "INF: ****** data:' URI" + node.getPdu().getHdr().getId());
+
+			msg.arg1 = node.getPdu().getHdr().getId();
 			msg.obj = pdudata;
 			messageHandler.sendMessage(msg);
-			//			responseTextView.setText(node.getPdu().getData());
-			// TODO: insert into buffer
 
-			//addFrameToBuffer(node);
-			//			System.out.println(LI+"INF: "+coap.get_addr(node.getRemote()));
+			// responseTextView.setText(node.getPdu().getData());
+			// System.out.println(LI+"INF: "+coap.get_addr(node.getRemote()));
 		}
 
 		/* acknowledge if requested */
@@ -610,5 +586,4 @@ public class CoAPClient extends Activity {
 		Log.i(LOG_TAG, "INF: created pdu");
 		return pdu;
 	}
-
 }
