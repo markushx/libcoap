@@ -14,12 +14,14 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -103,6 +105,8 @@ public class CoAPClient extends Activity {
     JSONObject volt = new JSONObject();
     // ~storage for data received
 
+    PowerManager.WakeLock wl;
+    
     FlotGraphHandler mGraphHandler;
 
 	String uris [];	
@@ -150,7 +154,6 @@ public class CoAPClient extends Activity {
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
-		
 	}
 
 	static void setStatus(CharSequence cs) {
@@ -165,6 +168,10 @@ public class CoAPClient extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main_client);
 
+        PowerManager pm  = (PowerManager) getSystemService(Context.POWER_SERVICE); 
+        wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "DoNotDimScreen");
+        wl.acquire();
+        
 		// setup UI elements
 		ipText = (EditText)findViewById(R.id.editTextIP);
 		portText = (EditText)findViewById(R.id.editTextPort);
