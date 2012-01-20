@@ -14,7 +14,6 @@ import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
 public class LowerReceive extends Thread {
 	boolean doStop = false;
 	coap_context_t ctx;
-	String RCI = "LowerReceive: ";
 	DatagramSocket clientSocket;
 
 	public LowerReceive(coap_context_t ctx, DatagramSocket clientSocket) {
@@ -27,7 +26,6 @@ public class LowerReceive extends Thread {
 		try {
 			receiveLoop();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -59,6 +57,5 @@ public class LowerReceive extends Thread {
 
 		}
 		Log.i(CoAPClient.LOG_TAG, "INF: LowerRequest: receiveLoop finished");
-//		System.out.println(RCI+"INF: receiveLoop finshed.");
 	}
 }

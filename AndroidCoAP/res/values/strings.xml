@@ -1,42 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">AndroidCoAP</string>
-    <string name="run">Run</string>
-    <string name="stop">Stop</string>
-    <string name="get">GET</string>
-    <string name="put">PUT</string>
-    <string name="token">Token</string>
-    <string name="ok">Ok</string>
+  <string name="app_name">AndroidCoAP</string>
+  <string name="run">Run</string>
+  <string name="stop">Stop</string>
+  <string name="get">GET</string>
+  <string name="put">PUT</string>
+  <string name="token">Token</string>
+  <string name="ok">Ok</string>
 
-    <string-array name="URIs">
-        <item>st</item>
-        <item>sh</item>
-        <item>sv</item>
-        <item>r</item>
-        <item>l</item>
-        <item>ck</item>
-        <item>rt</item>
-    </string-array>
+  <string-array name="URIs">
+    <item>st</item>
+    <item>sh</item>
+    <item>sv</item>
+    <item>r</item>
+    <item>l</item>
+    <item>ck</item>
+    <item>rt</item>
+  </string-array>
 
-    <string name="IP">IP:</string>
-    <string name="hintIP">fec0::3</string>
-    <string name="defaulIP">fec0::3</string>
-    <string name="port">"Port: "</string>
-    <string name="hintPort">61616</string>
-    <string name="defaultPort">61616</string>
-    <string name="menu_item_edit_resources">Edit Resources</string>
-    <string name="save">Save</string>
-    <string name="cancel">Cancel</string>
-    <string name="settings_resources">Enter resources separated by comma:</string>
+  <string name="IP">IP:</string>
+  <string name="hintIP">fec0::3</string>
+  <string name="defaulIP">fec0::3</string>
+  <string name="port">"Port: "</string>
+  <string name="hintPort">61616</string>
+  <string name="defaultPort">61616</string>
+  <string name="menu_item_edit_resources">Edit Resources</string>
+  <string name="save">Save</string>
+  <string name="cancel">Cancel</string>
+  <string name="settings_resources">Enter resources separated by comma:</string>
 
-    <string name="menu_item_about">About</string>
-    <string name="about_text">libcoapClient</string>
-	<string name="about_version">Version 1.1 Beta</string>
-	<string name="about_author_email">thp@comnets.uni-bremen.de</string>
-	<string name="about_project_url"></string>
-	<color name="blue">#0084E4</color>
-	
-	<string name="menu_item_ip">My IPv6</string>
-	<string name="ip_text">Your device IPv6-Address (global):</string>
+  <string name="menu_item_about">About</string>
+  <string name="about_text">libcoapClient</string>
+  <string name="about_version">Version 1.1 Beta</string>
+  <string name="about_author_email">thp@comnets.uni-bremen.de</string>
+  <string name="about_project_url"></string>
+  <color name="blue">#0084E4</color>
+
+  <string name="menu_item_ip">My IPv6</string>
+  <string name="ip_text">Your devices\' global IPv6 address:</string>
+  <string name="continuous">Continuous</string>
+  <string name="seconds">s</string>
+  <string name="seconds_5">5</string>
+
+  <string name="graph_title">Received sensor values</string>
+  <string name="graph_x_axis">Elapsed time in seconds since </string>
+  <string name="coap">coap://[</string>
+  <string name="between_ip_port">]:</string>
+  <string name="url_between_port_uri">/</string>
+
 </resources>
