@@ -13,6 +13,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -28,7 +30,6 @@ import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 import android.util.Log;
 
 import de.tzi.coap.jni.coap;
@@ -37,6 +38,7 @@ import de.tzi.coap.jni.coap_context_t;
 import de.tzi.coap.jni.coap_pdu_t;
 import de.tzi.coap.jni.coap_listnode;
 import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
+import de.tzi.coap.jni.coap_uri_t;
 
 /*
  * @author Markus Becker <mab@comnets.uni-bremen.de>
@@ -45,32 +47,33 @@ import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
 
 public class CoAPClient extends Activity {
 
-	//
+	public static final String LOG_TAG = "CoAP";
+
 	public static final String PREFS_NAME = "MyCoapPrefs";
 	static final int ABOUT_DIALOG = 0;
 	static final int IPV6_DIALOG = 1;
+
 	SharedPreferences settings;
 	ArrayAdapter<String> adapter;
+
 	EditText ipText;
 	EditText portText;
-	ToggleButton toggleButton;
-	TextView errTextView;
+	Button sendButton;
+	TextView responseTextView;
 	Spinner spinner;
 	RadioGroup rgMethod;
 	EditText payloadText;
+
 	String uris [];	
-
-	/////
-
-	private static final String LOG_TAG = "CoAP";
+	public static TextView statusText;
 
 	// CoAP specifics
 	static Random generateRand = new Random();
 	coap_context_t ctx;
 
 	DatagramSocket clientSocket;
-	//	LowerReceive lr = null;
-	//	Retransmitter rt = null;
+	LowerReceive lr = null;
+	Retransmitter rt = null;
 
 	static {
 		try{
@@ -83,7 +86,6 @@ public class CoAPClient extends Activity {
 		}
 	}
 
-	//TODO: call setup_coap in onCreate()?
 	public void setup_coap() {
 		// create coap_context
 		Log.i(LOG_TAG, "INF: create context");
@@ -108,23 +110,20 @@ public class CoAPClient extends Activity {
 			e.printStackTrace();
 		}
 
-		//		lr = new LowerReceive(ctx, clientSocket);
-		//		lr.start();
-		//
 		//		rt = new Retransmitter(ctx);
 		//		rt.start();
 	}
 
-	//TODO: do in onDestroy()?
-	protected void finalize() throws Throwable {
-		try {
-			// free context
-			Log.i(LOG_TAG, "INF: finalize");
-			coap.coap_free_context(ctx);
-		} finally {
-			super.finalize();
+	// manages messages for current Thread (main)
+	// received from our Thread
+	public Handler mainHandler = new Handler() {
+		public void handleMessage(android.os.Message msg) {
+			if (msg.what == 0) {
+				// updates the TextView with the received text
+				statusText.setText(msg.getData().getString("text"));
+			}
 		}
-	}
+	};
 
 	/** Called when the activity is first created. */
 	@Override
@@ -139,12 +138,12 @@ public class CoAPClient extends Activity {
 		ipText = (EditText)findViewById(R.id.editTextIP);		
 		portText = (EditText)findViewById(R.id.editTextPort);
 
-		errTextView = (TextView)findViewById(R.id.errOutputClient);
+		responseTextView = (TextView)findViewById(R.id.errOutputClient);
 
 		rgMethod = (RadioGroup)findViewById(R.id.radioGroup1);
 		payloadText = (EditText)findViewById(R.id.payloadText);
 
-		OnClickListener method_listener = new OnClickListener() {
+		OnClickListener get_put_listener = new OnClickListener() {
 			public void onClick(View v) {
 				// Perform action on clicks
 				RadioButton rb = (RadioButton) v;
@@ -159,40 +158,39 @@ public class CoAPClient extends Activity {
 
 		final RadioButton rbGet = (RadioButton) findViewById(R.id.rbGet);
 		final RadioButton rbPut = (RadioButton) findViewById(R.id.rbPut);
-		rbGet.setOnClickListener(method_listener);
-		rbPut.setOnClickListener(method_listener);
+		rbGet.setOnClickListener(get_put_listener);
+		rbPut.setOnClickListener(get_put_listener);
 
-		toggleButton = (ToggleButton)findViewById(R.id.toggleButtonClient);
-		toggleButton.setOnClickListener(new View.OnClickListener() {
-
+		sendButton = (Button)findViewById(R.id.button);
+		sendButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				if (toggleButton.isChecked()) {
-
-					//thp: execute: send request
-					if (ipText.getText().length() != 0) {
-						new runClient().execute("");
-						//						sendRequest(ipText.getText().toString());
-					} else {
-						Toast toast = Toast.makeText(getApplicationContext(), "Enter IPv6 address!!", 
-								Toast.LENGTH_LONG);
-						toast.show();
-					}
-
+				//thp: execute: send request
+				if (ipText.getText().length() != 0) {
+					sendRequest(ipText.getText().toString());
+					lr = new LowerReceive(ctx, clientSocket);
+					lr.start();
+					//						lr.execute("");
+					//						new runClient().execute("");
+					//						sendRequest(ipText.getText().toString());
 				} else {
-					//process.destroy();
+					Toast toast = Toast.makeText(getApplicationContext(), "Enter IPv6 address!!", 
+							Toast.LENGTH_LONG);
+					toast.show();
 				}
+
 			} 
 		});
+
+		statusText = (TextView) findViewById(R.id.textStatus); 
 
 		settings = getSharedPreferences(PREFS_NAME, 0);
 		ipText.setText(settings.getString("ip", ""));
 		portText.setText(settings.getString("port", ""));
 		spinner = (Spinner) findViewById(R.id.spinner1);		
-
 	}
 
 	@Override
-	protected void onStart(){
+	protected void onStart() {
 		super.onRestart();
 
 		uris = stringToArray(settings.getString("uris", initResourcePref()));
@@ -201,11 +199,10 @@ public class CoAPClient extends Activity {
 		spinner.setAdapter(adapter);
 		spinner.setSelection(settings.getInt("resource", settings.getInt("selUri", 0)));	
 		adapter.notifyDataSetChanged();
-
 	}
 
 	@Override
-	protected void onStop(){
+	protected void onStop() {
 		super.onStop();
 
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
@@ -232,13 +229,17 @@ public class CoAPClient extends Activity {
 	public void onDestroy() {
 		super.onDestroy(); 
 
+		// free context
+		Log.i(LOG_TAG, "INF: free context");
+		coap.coap_free_context(ctx);
+		Log.i(LOG_TAG, "INF: free context~");
+
 		// Kill process if not terminated yet
 		//		if (process != null) {
 		//			process.destroy();
-		//		} 
-
+		//		}
 	}
-
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
@@ -337,63 +338,19 @@ public class CoAPClient extends Activity {
 		return strArray;
 	}
 
-
-
-	//	public void run() {
-	//		String destination = "::1";
-	//		int port = coapConstants.COAP_DEFAULT_PORT;
-	//		int method = coapConstants.COAP_REQUEST_GET;
-	//		int content_type = coapConstants.COAP_MEDIATYPE_APPLICATION_OCTET_STREAM;
-	//		String uri = "/l";
-	//		String token = "3a";
-	//		String payload = "Hello CoAP";
-	//
-	//		Vector<CoapJavaOption> optionList = new Vector<CoapJavaOption>();
-	//		CoapJavaOption contentTypeOption = new CoapJavaOption(coapConstants.COAP_OPTION_CONTENT_TYPE, ""+(char)content_type, 1);
-	//		optionList.add(contentTypeOption);
-	//		CoapJavaOption uriOption = new CoapJavaOption(coap.COAP_OPTION_URI_PATH, uri, uri.length());
-	//		optionList.add(uriOption);
-	//		CoapJavaOption tokenOption = new CoapJavaOption(coap.COAP_OPTION_TOKEN, token, token.length());
-	//		optionList.add(tokenOption);
-	//		if ( method == coapConstants.COAP_REQUEST_GET || method == coapConstants.COAP_REQUEST_DELETE) {
-	//			payload = null;
-	//		}
-	//
-	//		Log.i(LOG_TAG, "create context");    
-	//		coap_context_t ctx = coap.coap_new_context(77777);
-	//		if (ctx == null) {
-	//			Log.e(LOG_TAG, "Could not create context");
-	//			Toast.makeText(getBaseContext(), 
-	//					"ERR: create context fail", 
-	//					Toast.LENGTH_LONG).show();
-	//			return;
-	//		}
-	//		Log.i(LOG_TAG, "create context success");
-	//		Toast.makeText(getBaseContext(), 
-	//				"INF: create context success", 
-	//				Toast.LENGTH_LONG).show();
-	//		coap.register_message_handler(ctx, this);
-	//
-	//		coap_pdu_t pdu = coap_new_request(method, optionList, payload);
-	//
-	//		if (pdu == null) {
-	//			System.err.println("Could not create pdu");
-	//			return;
-	//		}
-	//
-	//		// set destination
-	//		//sockaddr_in6 dst;
-	//		SWIGTYPE_p_sockaddr_in6 dst;
-	//		dst = coap.sockaddr_in6_create(coapConstants.AF_INET6,
-	//				port,
-	//				destination);
-	//	}
-
 	private class runClient extends AsyncTask<String, String, String> {
+
+		@Override
+		protected void onPreExecute() {
+			statusText.setText("Sending request...");
+		}
+
 		protected String doInBackground(String... s) {
 			Log.i(LOG_TAG, "INF: sendRequest");
-			sendRequest(ipText.getText().toString());
-			Log.i(LOG_TAG, "INF: sendRequest~");
+			//			sendRequest(ipText.getText().toString());
+			//			lr = new LowerReceive(ctx, clientSocket);
+			//			lr.execute("");
+			//			Log.i(LOG_TAG, "INF: sendRequest~");
 			return null;
 		}
 
@@ -402,7 +359,9 @@ public class CoAPClient extends Activity {
 		}
 
 		protected void onPostExecute(String result) {
-			//				toggleButton.setChecked(false);
+			Log.i(LOG_TAG, "INF: onPost runClient");
+			//			statusText.setText("Request sent...");
+			//							toggleButton.setChecked(false);
 		}
 	}
 
@@ -415,6 +374,8 @@ public class CoAPClient extends Activity {
 						+ (char) content_type, 1);
 
 		String uri = "l";
+		uri = spinner.getSelectedItem().toString();
+		Log.i(LOG_TAG, "INF: URI "+uri);
 		//String uri = "lipsum";
 
 		optionList.add(contentTypeOption);
@@ -457,7 +418,7 @@ public class CoAPClient extends Activity {
 			int free_pdu) {
 		// if you change the signature (name or parameters) of this 
 		// function, the swig interface needs to be changed as well
-		
+
 		Log.i(LOG_TAG, "INF: callback coap_send_impl @ "+System.currentTimeMillis());
 		try {
 			InetAddress IPAddress = InetAddress.getByName(coap.get_addr(dst));
@@ -482,10 +443,56 @@ public class CoAPClient extends Activity {
 		return;
 	}
 
+	//	public class MessageHandlerRunnable extends Thread {
+	//		coap_context_t ctx;
+	//		coap_listnode node;
+	//		String data;
+	//		
+	//		public MessageHandlerRunnable(coap_context_t ctx,
+	//				coap_listnode node,
+	//				String data) {
+	//			this.ctx = ctx;
+	//			this.node = node;
+	//			this.data = data;
+	//		}
+	//
+	//		public void run() {
+	//			Log.i(LOG_TAG, "INF: MessageHandlerRunnable: run");
+	//			responseTextView.setText(node.getPdu().getData());
+	//		}
+	//	}
+
+	//message handler to update UI thread
+	private Handler messageHandler = new Handler() {
+		public void handleMessage(Message msg) {
+
+			short[] pdudata = (short[])msg.obj;
+
+			responseTextView.append(shortArray2String(pdudata)+"\n");
+			responseTextView.append(""+(int)pdudata[0]);
+		}
+	};
+
+	String shortArray2String(short[] arr) {
+		StringBuffer sb = new StringBuffer();
+
+		for (int i = 0; i < arr.length; i++) {
+			byte[] b = new byte[1];
+			b[0] = (byte)arr[i];
+			sb.append(new String(b));
+		}
+
+		return sb.toString();
+	}
+
 	public void messageHandler(coap_context_t ctx, coap_listnode node,
 			String data) {
+
+		Message msg = messageHandler.obtainMessage();
+
+		lr.requestStop();
 		coap_pdu_t pdu = null;
-		//		System.out.println(LI+"INF: Java Client messageHandler()");
+		Log.i(LOG_TAG, "INF: Java Client messageHandler()");
 
 		//		System.out.println(LI+"INF: ****** pdu (" + node.getPdu().getLength()
 		//				+ " bytes)" + " v:" + node.getPdu().getHdr().getVersion()
@@ -493,6 +500,8 @@ public class CoAPClient extends Activity {
 		//				+ node.getPdu().getHdr().getOptcnt() + " c:"
 		//				+ node.getPdu().getHdr().getCode() + " id:"
 		//				+ node.getPdu().getHdr().getId());
+
+
 
 		if (node.getPdu().getHdr().getVersion() != coapConstants.COAP_DEFAULT_VERSION) {
 			Log.w(LOG_TAG, "WARN: dropped packet with unknown version "+
@@ -519,10 +528,13 @@ public class CoAPClient extends Activity {
 			int len = coap.coap_get_data_java(node.getPdu(), pdudata);
 			Log.i(LOG_TAG, "INF: ****** data:'" + pdudata + "'" +len);
 
-			for (int i = 0; i < len; i++) {
-				System.out.print(""+pdudata[i]+" ");
-			}
-			System.out.println("");
+			coap_uri_t uri = null;
+			//			coap.coap_get_request_uri(node.getPdu(), uri);
+			//			Log.i(LOG_TAG, "INF: ****** data:' URI" + uri.getPath());
+			//			msg.arg1 = coap.coap_get_resource(ctx, arg1)
+			msg.obj = pdudata;
+			messageHandler.sendMessage(msg);
+			//			responseTextView.setText(node.getPdu().getData());
 			// TODO: insert into buffer
 
 			//addFrameToBuffer(node);
@@ -540,7 +552,8 @@ public class CoAPClient extends Activity {
 	}
 
 	public void finish(coap_context_t ctx, coap_listnode node, coap_pdu_t pdu) {
-		System.out.println("INF: finish()");
+		Log.i(LOG_TAG, "INF: finish");
+		//		toggleButton.setChecked(false);
 		if ((pdu != null)
 				&& (coap.coap_send(ctx, node.getRemote(), pdu) == coapConstants.COAP_INVALID_TID)) {
 			Log.e(LOG_TAG, "ERR: message_handler: error sending reponse");

@@ -10,13 +10,13 @@
     <string name="ok">Ok</string>
 
     <string-array name="URIs">
-        <item>/st</item>
-        <item>/sh</item>
-        <item>/sv</item>
-        <item>/r</item>
-        <item>/l</item>
-        <item>/ck</item>
-        <item>/rt</item>
+        <item>st</item>
+        <item>sh</item>
+        <item>sv</item>
+        <item>r</item>
+        <item>l</item>
+        <item>ck</item>
+        <item>rt</item>
     </string-array>
 
     <string name="IP">IP:</string>
