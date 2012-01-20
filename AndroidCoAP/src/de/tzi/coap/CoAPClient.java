@@ -31,6 +31,7 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -62,15 +63,29 @@ public class CoAPClient extends Activity {
 
 	SharedPreferences settings;
 	ArrayAdapter<String> adapter;
-
+	
+	// UI elements
 	EditText ipText;
 	EditText portText;
-	Button sendButton;
-	TextView responseTextView;
-	Spinner spinner;
+	Spinner uriSpinner;
+	
 	RadioGroup rgMethod;
+	RadioButton rb_get;
+	RadioButton rb_put;
 	EditText payloadText;
-	public static TextView statusText;
+
+	Button btn_send;
+	
+	CheckBox continuousCB;
+	EditText seconds;
+	
+	TextView statusText;
+
+	ScrollView sv;
+	TextView responseTextView;
+
+	WebView wv;
+	//~ UI elements
 	
 	String uris [];	
 
@@ -81,7 +96,8 @@ public class CoAPClient extends Activity {
 	DatagramSocket clientSocket;
 	LowerReceive lr = null;
 	Retransmitter rt = null;
-
+	RequesterThread reqthr = null;
+	
 	static {
 		try{
 			Log.i(LOG_TAG, "static load library");
@@ -133,17 +149,32 @@ public class CoAPClient extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main_client);
 
-		setup_coap();
-
-		ipText = (EditText)findViewById(R.id.editTextIP);		
+		// setup UI elements
+		ipText = (EditText)findViewById(R.id.editTextIP);
 		portText = (EditText)findViewById(R.id.editTextPort);
-
-		responseTextView = (TextView)findViewById(R.id.responseTextView);
-
-		// GET/PUT -------
+		uriSpinner = (Spinner) findViewById(R.id.uriSpinner);
+		
 		rgMethod = (RadioGroup)findViewById(R.id.radioGroup1);
+		rb_get = ((RadioButton) findViewById(R.id.rbGet));
+		rb_put = ((RadioButton) findViewById(R.id.rbPut));
 		payloadText = (EditText)findViewById(R.id.payloadText);
 
+		btn_send = (Button)findViewById(R.id.btn_send);
+		
+		continuousCB = (CheckBox) findViewById(R.id.continuous);
+		seconds = (EditText)findViewById(R.id.seconds);
+		
+		statusText = (TextView) findViewById(R.id.textStatus);
+
+		sv = (ScrollView)findViewById(R.id.scrollView1);
+		responseTextView  = (TextView)findViewById(R.id.responseTextView);
+
+		wv = (WebView)findViewById(R.id.wv1);
+		//~ setup UI elements
+		
+		setup_coap();
+
+		// GET/PUT -------
 		OnClickListener get_put_listener = new OnClickListener() {
 			public void onClick(View v) {
 				// Perform action on clicks
@@ -156,15 +187,11 @@ public class CoAPClient extends Activity {
 				}
 			}
 		};
-
-		final RadioButton rbGet = (RadioButton) findViewById(R.id.rbGet);
-		final RadioButton rbPut = (RadioButton) findViewById(R.id.rbPut);
-		rbGet.setOnClickListener(get_put_listener);
-		rbPut.setOnClickListener(get_put_listener);
-
+		rb_get.setOnClickListener(get_put_listener);
+		rb_put.setOnClickListener(get_put_listener);
+		
 		// SEND -------
-		sendButton = (Button)findViewById(R.id.button);
-		sendButton.setOnClickListener(new OnClickListener() {
+		btn_send.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				//thp: execute: send request
 				if (ipText.getText().length() != 0) {
@@ -175,7 +202,13 @@ public class CoAPClient extends Activity {
 					Log.d("CoAP", "LowerReceive started");
 
 					Log.d("CoAP", "sendRequest");
-					sendRequest(ipText.getText().toString());
+					sendRequest(ipText.getText().toString(),
+							new Integer(portText.getText().toString()).intValue(),
+							uriSpinner.getSelectedItem().toString(),
+							(rb_get.isChecked() ?
+									coapConstants.COAP_REQUEST_GET :
+									coapConstants.COAP_REQUEST_PUT)
+							);
 					Log.d("CoAP", "sendRequest~");
 				} else {
 					Toast toast = Toast.makeText(getApplicationContext(),
@@ -186,36 +219,39 @@ public class CoAPClient extends Activity {
 			} 
 		});
 
-		// CONTINUOUS -------
-		final CheckBox continuousCB = (CheckBox) findViewById(R.id.continuous);
-		
+		// CONTINUOUS -------		
 		OnCheckedChangeListener cont_listener = new OnCheckedChangeListener() {
 			public void onCheckedChanged(CompoundButton buttonView,
 					boolean isChecked) {
 				if (isChecked) {
 					Log.d("CoAP", "-> continuous mode");
-					findViewById(R.id.scrollView1).setVisibility(View.GONE);
-					WebView wv = (WebView)findViewById(R.id.wv1); 
+					sv.setVisibility(View.GONE);
+					btn_send.setEnabled(false);
+ 
 					wv.setVisibility(View.VISIBLE);
 					wv.getSettings().setJavaScriptEnabled(true);
 					wv.loadUrl("file:///android_asset/flot/stats_graph.html");
 
+					reqthr = new RequesterThread();
+					reqthr.start();
+					
 				} else {
 					Log.d("CoAP", "-> single shot mode");
-					findViewById(R.id.scrollView1).setVisibility(View.VISIBLE);
-					findViewById(R.id.wv1).setVisibility(View.GONE);
+					sv.setVisibility(View.VISIBLE);
+					wv.setVisibility(View.GONE);
+					btn_send.setEnabled(true);
+					if (reqthr != null) {
+						reqthr.requestStop();
+					}
 				}
 			}
 		};
 		continuousCB.setOnCheckedChangeListener(cont_listener);
-		Log.d("CoAP", "setOnChecked");
+		
 		// --------
-		statusText = (TextView) findViewById(R.id.textStatus); 
-
 		settings = getSharedPreferences(PREFS_NAME, 0);
 		ipText.setText(settings.getString("ip", ""));
 		portText.setText(settings.getString("port", ""));
-		spinner = (Spinner) findViewById(R.id.spinner1);		
 	}
 
 	@Override
@@ -225,8 +261,8 @@ public class CoAPClient extends Activity {
 		uris = stringToArray(settings.getString("uris", initResourcePref()));
 		adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, uris);
 		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spinner.setAdapter(adapter);
-		spinner.setSelection(settings.getInt("resource", settings.getInt("selUri", 0)));	
+		uriSpinner.setAdapter(adapter);
+		uriSpinner.setSelection(settings.getInt("resource", settings.getInt("selUri", 0)));	
 		adapter.notifyDataSetChanged();
 	}
 
@@ -238,12 +274,12 @@ public class CoAPClient extends Activity {
 		SharedPreferences.Editor editor = settings.edit();
 		editor.putString("ip", ipText.getText().toString());
 		editor.putString("port", portText.getText().toString());
-		editor.putInt("resource", spinner.getSelectedItemPosition());
-		editor.putInt("selUri", spinner.getSelectedItemPosition());
+		editor.putInt("resource", uriSpinner.getSelectedItemPosition());
+		editor.putInt("selUri", uriSpinner.getSelectedItemPosition());
 
 		StringBuilder spinnerEntries = new StringBuilder();
-		for (int i = 0; i < spinner.getCount(); i++) {
-			spinnerEntries.append(spinner.getItemAtPosition(i)+",");		
+		for (int i = 0; i < uriSpinner.getCount(); i++) {
+			spinnerEntries.append(uriSpinner.getItemAtPosition(i)+",");		
 		}
 		spinnerEntries.deleteCharAt(spinnerEntries.length()-1);
 		editor.putString("uris", spinnerEntries.toString());
@@ -372,15 +408,27 @@ public class CoAPClient extends Activity {
 		public void requestStop() {
 			Log.i(CoAPClient.LOG_TAG, "INF: RequesterThread requestStop");
 			doStop = true;
+			//lr.stop(); //CHECK: is the requestLoop killed, when we stop the receive part??? 
 		}
 		
 		private void requestLoop() {
 			while (!doStop) {
+				Log.d("CoAP", "start LowerReceive");
+				lr = new LowerReceive(ctx, clientSocket);
+				lr.start();
+				Log.d("CoAP", "LowerReceive started");
+
 				Log.i(CoAPClient.LOG_TAG, "INF: RequesterThread: next request...");
-				sendRequest(ipText.getText().toString());
+				sendRequest(ipText.getText().toString(),
+						new Integer(portText.getText().toString()).intValue(),
+						uriSpinner.getSelectedItem().toString(),
+						(rb_get.isChecked() ?
+								coapConstants.COAP_REQUEST_GET :
+								coapConstants.COAP_REQUEST_PUT)
+						);
 				try {
 					int inter_req_sec = new Integer(
-							((EditText)findViewById(R.id.seconds)).getText().toString()
+							seconds.getText().toString()
 							).intValue();
 					Thread.sleep(inter_req_sec*1000);
 				} catch (InterruptedException e) {
@@ -390,7 +438,7 @@ public class CoAPClient extends Activity {
 		}
 	}
 	
-	private void sendRequest(String destination) {
+	private void sendRequest(String destination, int port, String uri, int method) {
 		Vector<CoapJavaOption> optionList = new Vector<CoapJavaOption>();
 
 		int content_type = coapConstants.COAP_MEDIATYPE_APPLICATION_OCTET_STREAM;
@@ -398,9 +446,7 @@ public class CoAPClient extends Activity {
 				coapConstants.COAP_OPTION_CONTENT_TYPE, ""
 						+ (char) content_type, 1);
 
-		String uri = "l";
-		uri = spinner.getSelectedItem().toString();
-		Log.i(LOG_TAG, "INF: URI "+uri);
+		Log.i(LOG_TAG, "INF: sendRequest: "+((method==coapConstants.COAP_REQUEST_GET)?"GET":"PUT")+" coap://["+destination+"]:"+port+"/"+uri);
 
 		optionList.add(contentTypeOption);
 		CoapJavaOption uriOption = new CoapJavaOption(
@@ -413,8 +459,6 @@ public class CoAPClient extends Activity {
 				token, token.length());
 		optionList.add(tokenOption);
 
-		//TODO: actually use the selected method
-		int method = coapConstants.COAP_REQUEST_GET;
 		String payload = null;
 		coap_pdu_t pdu = coap_new_request(method, optionList, payload);
 
@@ -423,11 +467,13 @@ public class CoAPClient extends Activity {
 			return;
 		}
 
+		//TODO: token is added, use this on receive path to differentiate?
 		uriHM.put(pdu.getHdr().getId(), uri);
 
 		// set destination
 		SWIGTYPE_p_sockaddr_in6 dst = null;
-		dst = coap.sockaddr_in6_create(coapConstants.AF_INET6, coapConstants.COAP_DEFAULT_PORT,
+		dst = coap.sockaddr_in6_create(coapConstants.AF_INET6,
+				port,
 				destination);
 
 		// send pdu	
@@ -438,7 +484,7 @@ public class CoAPClient extends Activity {
 		// free destination
 		coap.sockaddr_in6_free(dst);
 		
-		setStatus("CoAP request (MID: "+pdu.getHdr().getId()+") sent.");
+		//setStatus("CoAP request (MID: "+pdu.getHdr().getId()+") sent.");
 	}
 
 	//JNI callback to replace C socket with Java DatagramSocket
