@@ -567,8 +567,8 @@ public class CoAPClient extends Activity {
 
 	private void handleR(ResourceR val) {
 		int temp_val = val.getTemp();
-		int hum_val  = 50;
-		int volt_val = 300;
+		int hum_val  = val.getHum();
+		int volt_val = val.getVolt();
 		
 		if (continuous.isChecked()) {
 			JSONArray result = new JSONArray();
@@ -608,6 +608,7 @@ public class CoAPClient extends Activity {
 				Toast toast = Toast.makeText(getApplicationContext(),
 						"JSON exception.", 
 						Toast.LENGTH_LONG);
+				toast.show();
 			}
 		}
 	}
@@ -668,6 +669,7 @@ public class CoAPClient extends Activity {
 			Toast toast = Toast.makeText(getApplicationContext(),
 					"JSON data has errors.", 
 					Toast.LENGTH_LONG);
+			toast.show();
 		}
 	}
 
@@ -683,6 +685,17 @@ public class CoAPClient extends Activity {
 		return sb.toString();
 	}
 
+	byte[] shortArray2byteArray(short[] arr) {
+		byte[] bArr = new byte[arr.length];
+
+		for (int i = 0; i < arr.length; i++) {
+			bArr[i] = (byte)(arr[i] & 0xFF);
+		}
+
+		return bArr;
+	}
+
+	
 	public void messageHandler(coap_context_t ctx, coap_listnode node,
 			String data) {
 

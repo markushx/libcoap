@@ -1,51 +1,48 @@
 package de.tzi.coap;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.nio.ByteBuffer;
-import java.nio.ShortBuffer;
-
 import android.util.Log;
 
-import de.tzi.coap.jni.coap;
-import de.tzi.coap.jni.coapConstants;
-import de.tzi.coap.jni.coap_context_t;
-import de.tzi.coap.jni.coap_pdu_t;
-import de.tzi.coap.jni.str;
-
 public class ResourceR {
-	ByteBuffer bb;
-	int temp;
-	int hum;
-	int volt;	
-	short dd;
 	short[] data;
-//	String data;
-	
+
+	private int temp;
+	private int hum;
+	private int volt;	
+
 	public ResourceR(short[] data) {
+		this.data = data;
 
-		this.data = data;	
-		this.temp = (((char)data[1])<<8 | ((char)data[2]));
+		int temp = 0;
+		temp = (byte)(data[1] & 0xFF);
+		temp = temp << 8;
+		temp = temp + (byte)(data[2] & 0xFF);
+		this.temp = temp;
 
+		int hum = 0;
+		hum = (byte)(data[4] & 0xFF);
+		hum = hum << 8;
+		hum = hum + (byte)(data[5] & 0xFF);
+		this.hum = hum;
+
+		int volt = 0;
+		volt = (byte)(data[7] & 0xFF);
+		volt = volt << 8;
+		volt = volt + (byte)(data[8] & 0xFF);
+		this.volt = volt;
 	}
 
-	
 	public void show() {
 		Log.i(CoAPClient.LOG_TAG, "INF: ResourceR: "+data[0]+"  "+this.temp);
-		
-//		System.out.println(RCI+"show length "+data.length +"  "+ volt + Character.getNumericValue(volt));
-		
 	}
-	
+
 	public int getTemp() {
 		return temp;
 	}
-	
+
 	public int getHum() {
 		return hum;
 	}
-	
+
 	public int getVolt() {
 		return volt;
 	}	
