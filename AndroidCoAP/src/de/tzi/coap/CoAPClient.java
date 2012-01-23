@@ -408,6 +408,10 @@ public class CoAPClient extends Activity {
 
 		//release wake-lock
 		wl.release();
+		
+		Log.i(LOG_TAG, "INF: deregister message handler");
+		coap.deregister_message_handler(ctx, this);
+		Log.i(LOG_TAG, "INF: deregistered message handler");
 	}
 
 	@Override

@@ -277,6 +277,13 @@ signed
     //fflush(stdout);
   }
 
+  void deregister_message_handler(coap_context_t *ctx, jobject client_server) {
+    //printf ("INF: register_message_handler(%p, %p)\n", ctx, client_server);
+    (*jenv)->DeleteGlobalRef(jenv, client_server);
+    //printf ("INF: ~register_message_handler()\n");
+    //fflush(stdout);
+  }
+
   JNIEXPORT void JNICALL coap_send_impl(coap_context_t *ctx,
 					const struct sockaddr_in6 *dst, 
 					coap_pdu_t *pdu,
@@ -500,6 +507,7 @@ signed
   %}
 
 void register_message_handler(coap_context_t *ctx, jobject client_server);
+void deregister_message_handler(coap_context_t *ctx, jobject client_server);
 struct sockaddr_in6 *sockaddr_in6_create(int family, int port, jstring addr);
 jstring get_addr(struct sockaddr_in6 src);
 jbyteArray get_bytes(coap_pdu_t pdu);
