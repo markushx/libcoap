@@ -679,9 +679,8 @@ public class CoAPClient extends Activity {
 			JSONArray entryTemp = new JSONArray();
 			JSONArray entryHum = new JSONArray();
 			JSONArray entryVolt = new JSONArray();
-
+			
 			float diff = (new Date()).getTime() - startDate.getTime();
-
 			try {
 				entryTemp.put(diff / 1000);
 				entryHum.put(diff / 1000);
@@ -740,11 +739,14 @@ public class CoAPClient extends Activity {
 				} else {
 					responseTextView.append("URI not found\n");
 				}
-
+				
 			} else {
 				responseTextView.append("URI not available\n");
 			}
 
+			//scroll down to bottom
+			sv.fullScroll(ScrollView.FOCUS_DOWN);
+			
 			uriHM.clear();
 		}
 	};
