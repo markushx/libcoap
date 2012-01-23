@@ -295,26 +295,44 @@ public class CoAPClient extends Activity {
 					wv.loadUrl("file:///android_asset/flot/stats_graph.html");
 
 					startDate  = new Date();
-					
+
+					int port = coapConstants.COAP_DEFAULT_PORT;
 					try {
-						int port = new Integer(portText.getText().toString()).intValue();
-						int seconds = new Integer(secondsText.getText().toString()).intValue();
-						
-						reqthr = new RequesterThread(getApplicationContext(),
-								ipText.getText().toString(),
-								port,
-								uriSpinner.getSelectedItem().toString(),
-								rb_get.isChecked() ?
-										coapConstants.COAP_REQUEST_GET :
-											coapConstants.COAP_REQUEST_PUT,
-								seconds
-								);
-						reqthr.start();
-						
-						secondsText.setEnabled(false);
+						port = new Integer(portText.getText().toString()).intValue();
 					} catch (NumberFormatException e) {
+						port = coapConstants.COAP_DEFAULT_PORT;
+						portText.setText(""+port);
 						
+						Toast toast = Toast.makeText(getApplicationContext(),
+								"Number error. Setted port to "+port+".", 
+								Toast.LENGTH_LONG);
+						toast.show();
 					}
+					
+					int seconds = 2;
+					try{
+						seconds = new Integer(secondsText.getText().toString()).intValue();
+					} catch (NumberFormatException e) {
+						seconds = 2;
+						secondsText.setText(""+seconds);
+						
+						Toast toast = Toast.makeText(getApplicationContext(),
+								"Number error. Setted request time to "+seconds+"s.", 
+								Toast.LENGTH_LONG);
+						toast.show();
+					}
+					reqthr = new RequesterThread(getApplicationContext(),
+							ipText.getText().toString(),
+							port,
+							uriSpinner.getSelectedItem().toString(),
+							rb_get.isChecked() ?
+									coapConstants.COAP_REQUEST_GET :
+										coapConstants.COAP_REQUEST_PUT,
+										seconds
+							);
+					reqthr.start();
+
+					secondsText.setEnabled(false);
 				} else {
 					Log.d("CoAP", "-> single shot mode");
 					sv.setVisibility(View.VISIBLE);
