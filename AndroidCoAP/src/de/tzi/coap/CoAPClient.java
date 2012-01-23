@@ -342,9 +342,14 @@ public class CoAPClient extends Activity {
 		coap.coap_free_context(ctx);
 		Log.i(LOG_TAG, "INF: free context~");
 
-		//stop all threads, just in case they are still running
-		lr.requestStop();
-		rt.requestStop();
+		//stop all threads, just in case 
+		try {
+			lr.requestStop();
+			rt.requestStop();
+			reqthr.requestStop();
+		} catch (NullPointerException e) {
+			// do nothing, just exit
+		}
 
 		//release wake-lock
 		wl.release();
