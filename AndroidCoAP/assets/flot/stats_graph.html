@@ -7,26 +7,25 @@
 <script src="jquery.min.js"></script>
 <script src="jquery.flot.min.js"></script>
 <script id="source" language="javascript" type="text/javascript">
-	
+
 var gdata; //global variable to store the data
 
 $(document).ready(function () {
 	document.getElementById('graphTitle').innerHTML = window.testhandler.getGraphTitle();
 	document.getElementById('xAxisLabel').innerHTML = window.testhandler.getXAxisLabel();
-	
-	window.testhandler.loadGraph();	
 
+	window.testhandler.loadGraph();
 });
-	
+
 /**
  * Draw the graph. This is a callback which will be called by JavaWorld
- * 
+ *
  * @param {Object} gdata
- */	
-function GotGraph(data, options) {	
+ */
+function GotGraph(data, options) {
 	gdata = data;
 	opt = options;
-	$.plot($("#graphHolder"), gdata, opt);	
+	$.plot($("#graphHolder"), gdata, opt);
 }
 </script>
 
