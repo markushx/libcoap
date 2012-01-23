@@ -631,6 +631,9 @@ public class CoAPClient extends Activity {
 					ResourceR val = new ResourceR(pdudata);
 					val.show();
 					handleR(val);
+					responseTextView.append("r: T:"+ ((float)val.getTemp()/ 100 - 273.15)
+							+ " H:" + ((float)val.getHum()/100) 
+							+ " V:" + ((float)val.getVolt()/100) + "\n");
 				} else {
 					responseTextView.append("URI not found\n");
 				}
@@ -646,15 +649,11 @@ public class CoAPClient extends Activity {
 	//message handler to update UI thread for retransmissions
 	public static Handler messageUIHandlerRetransmission = new Handler() {
 		public void handleMessage(Message msg) {
-
 			if (msg.arg1 < coapConstants.COAP_DEFAULT_MAX_RETRANSMIT) {
 				setStatus("Retransmission #"+msg.arg1);
 			} else {
 				setStatus("Request aborted... ");
 			}
-
-
-			//			super.handleMessage(msg);
 		}
 	};
 
