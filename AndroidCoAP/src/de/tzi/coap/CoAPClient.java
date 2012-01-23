@@ -18,10 +18,15 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.PowerManager;
+import android.provider.SyncStateContract.Constants;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -171,6 +176,16 @@ public class CoAPClient extends Activity {
 		PowerManager pm  = (PowerManager) getSystemService(Context.POWER_SERVICE); 
 		wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "DoNotDimScreen");
 		wl.acquire();
+
+		//setup orientation based on screensize
+		Display display = getWindowManager().getDefaultDisplay(); 
+		int width = display.getWidth();
+
+		if (width > 700) {
+			this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+		} else {
+			this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+		}
 
 		// setup UI elements
 		ipText = (EditText)findViewById(R.id.editTextIP);
