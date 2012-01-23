@@ -105,9 +105,9 @@ public class CoAPClient extends Activity {
 	JSONObject volt = new JSONObject();
 	// ~storage for data received
 
-    PowerManager.WakeLock wl;
-    
-    FlotGraphHandler mGraphHandler;
+	PowerManager.WakeLock wl;
+
+	FlotGraphHandler mGraphHandler;
 
 	String uris [];	
 	private Date startDate;
@@ -168,10 +168,10 @@ public class CoAPClient extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main_client);
 
-        PowerManager pm  = (PowerManager) getSystemService(Context.POWER_SERVICE); 
-        wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "DoNotDimScreen");
-        wl.acquire();
-        
+		PowerManager pm  = (PowerManager) getSystemService(Context.POWER_SERVICE); 
+		wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "DoNotDimScreen");
+		wl.acquire();
+
 		// setup UI elements
 		ipText = (EditText)findViewById(R.id.editTextIP);
 		portText = (EditText)findViewById(R.id.editTextPort);
@@ -342,9 +342,12 @@ public class CoAPClient extends Activity {
 		coap.coap_free_context(ctx);
 		Log.i(LOG_TAG, "INF: free context~");
 
-		//stop all threads, just in case
-		//		lr.requestStop();
-		//		rt.requestStop();
+		//stop all threads, just in case they are still running
+		lr.requestStop();
+		rt.requestStop();
+
+		//release wake-lock
+		wl.release();
 	}
 
 	@Override
@@ -569,7 +572,7 @@ public class CoAPClient extends Activity {
 		int temp_val = val.getTemp();
 		int hum_val  = val.getHum();
 		int volt_val = val.getVolt();
-		
+
 		if (continuous.isChecked()) {
 			JSONArray result = new JSONArray();
 
@@ -695,7 +698,7 @@ public class CoAPClient extends Activity {
 		return bArr;
 	}
 
-	
+
 	public void messageHandler(coap_context_t ctx, coap_listnode node,
 			String data) {
 
