@@ -2,6 +2,7 @@ package de.tzi.coap;
 
 import java.io.IOException;
 import java.net.*;
+import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Random;
@@ -68,6 +69,7 @@ import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
 public class CoAPClient extends Activity {
 
 	public static final String LOG_TAG = "CoAP";
+	public Boolean isTablet = false;
 
 	HashMap<Integer, String> uriHM = new HashMap<Integer, String>(); 
 
@@ -184,6 +186,7 @@ public class CoAPClient extends Activity {
 
 		if (width > 700) {
 			this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+			isTablet = true;
 		} else {
 			this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		}
@@ -244,7 +247,7 @@ public class CoAPClient extends Activity {
 					rt.start();
 
 					Log.d("CoAP", "sendRequest");
-					
+
 					try {
 						sendRequest(ipText.getText().toString(),
 								new Integer(portText.getText().toString()).intValue(),
@@ -275,7 +278,7 @@ public class CoAPClient extends Activity {
 			public void onCheckedChanged(CompoundButton buttonView,
 					boolean isChecked) {
 				if (isChecked) {
-					
+
 					// storage for data received
 					dataTemp = new JSONArray();
 					dataHum = new JSONArray();
@@ -300,9 +303,12 @@ public class CoAPClient extends Activity {
 						e.printStackTrace();
 					}
 					// ~storage for data received
-					
+
 					Log.d("CoAP", "-> continuous mode");
-					sv.setVisibility(View.GONE);
+					if (!isTablet) {
+						sv.setVisibility(View.GONE);
+					}
+
 					btn_send.setEnabled(false);
 
 					wv.setVisibility(View.VISIBLE);
@@ -317,20 +323,20 @@ public class CoAPClient extends Activity {
 					} catch (NumberFormatException e) {
 						port = coapConstants.COAP_DEFAULT_PORT;
 						portText.setText(""+port);
-						
+
 						Toast toast = Toast.makeText(getApplicationContext(),
 								"Number error. Setted port to "+port+".", 
 								Toast.LENGTH_LONG);
 						toast.show();
 					}
-					
+
 					int seconds = 2;
 					try{
 						seconds = new Integer(secondsText.getText().toString()).intValue();
 					} catch (NumberFormatException e) {
 						seconds = 2;
 						secondsText.setText(""+seconds);
-						
+
 						Toast toast = Toast.makeText(getApplicationContext(),
 								"Number error. Setted request time to "+seconds+"s.", 
 								Toast.LENGTH_LONG);
@@ -531,28 +537,28 @@ public class CoAPClient extends Activity {
 		boolean doStop = false;
 
 		Context context;
-		
+
 		String ip;
 		int port;
 		String uri;
 		int method;
-		
+
 		int seconds_to_sleep;
-		
+
 		public RequesterThread(Context context,
 				String ip, int port,
 				String uri, int method,
 				int seconds_to_sleep) {
 			this.context = context;
-		
+
 			this.ip = ip;
 			this.port = port;
 			this.uri = uri;
 			this.method = method;
-			
+
 			this.seconds_to_sleep = seconds_to_sleep;
 		}
-		
+
 		public void run() {
 			Log.i(CoAPClient.LOG_TAG, "INF: RequesterThread run()");
 			Looper.prepare();
@@ -728,9 +734,9 @@ public class CoAPClient extends Activity {
 					ResourceR val = new ResourceR(pdudata);
 					val.show();
 					handleR(val);
-					responseTextView.append("r: T:"+ ((float)val.getTemp()/ 100 - 273.15)
-							+ " H:" + ((float)val.getHum()/100) 
-							+ " V:" + ((float)val.getVolt()/100) + "\n");
+					responseTextView.append("r: T:"+ roundTwoDecimals((float)val.getTemp()/100 - 273.15)
+							+ " H:" + roundTwoDecimals(((float)val.getHum()/100)) 
+							+ " V:" + roundTwoDecimals((float)val.getVolt()/100) + "\n");
 				} else {
 					responseTextView.append("URI not found\n");
 				}
@@ -742,6 +748,11 @@ public class CoAPClient extends Activity {
 			uriHM.clear();
 		}
 	};
+
+	float roundTwoDecimals(double d) {
+		DecimalFormat twoDForm = new DecimalFormat("#.##");
+		return Float.valueOf(twoDForm.format(d));
+	}
 
 	//message handler to update UI thread for retransmissions
 	public static Handler messageUIHandlerRetransmission = new Handler() {
@@ -760,7 +771,13 @@ public class CoAPClient extends Activity {
 					DateFormat.format("hh:mm:ss", startDate).toString());
 
 			wv.addJavascriptInterface(mGraphHandler, "testhandler");
-			wv.loadUrl("file:///android_asset/flot/stats_graph.html");
+			if (isTablet) {
+				wv.loadUrl("file:///android_asset/flot/stats_graph_tablet.html");
+			}else {
+				wv.loadUrl("file:///android_asset/flot/stats_graph.html");
+			}
+			
+			
 		} else {
 			Toast toast = Toast.makeText(getApplicationContext(),
 					"JSON data has errors.", 
