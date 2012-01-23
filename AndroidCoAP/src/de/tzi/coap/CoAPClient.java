@@ -397,6 +397,10 @@ public class CoAPClient extends Activity {
 		coap.coap_free_context(ctx);
 		Log.i(LOG_TAG, "INF: free context~");
 
+		Log.i(LOG_TAG, "INF: deregister message handler");
+		coap.deregister_message_handler(ctx, this);
+		Log.i(LOG_TAG, "INF: deregistered message handler");
+
 		//stop all threads, just in case 
 		try {
 			lr.requestStop();
@@ -407,11 +411,7 @@ public class CoAPClient extends Activity {
 		}
 
 		//release wake-lock
-		wl.release();
-		
-		Log.i(LOG_TAG, "INF: deregister message handler");
-		coap.deregister_message_handler(ctx, this);
-		Log.i(LOG_TAG, "INF: deregistered message handler");
+		wl.release();		
 	}
 
 	@Override
