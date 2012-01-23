@@ -20,6 +20,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.view.LayoutInflater;
@@ -85,7 +86,7 @@ public class CoAPClient extends Activity {
 	Button btn_send;
 
 	CheckBox continuous;
-	EditText seconds;
+	EditText secondsText;
 
 	static TextView statusText;
 
@@ -96,13 +97,13 @@ public class CoAPClient extends Activity {
 	//~ UI elements
 
 	// storage for data received
-	JSONArray dataTemp = new JSONArray();
-	JSONArray dataHum = new JSONArray();
-	JSONArray dataVolt = new JSONArray();
+	JSONArray dataTemp;
+	JSONArray dataHum;
+	JSONArray dataVolt;
 
-	JSONObject temp = new JSONObject();
-	JSONObject hum = new JSONObject();
-	JSONObject volt = new JSONObject();
+	JSONObject temp;
+	JSONObject hum;
+	JSONObject volt;
 	// ~storage for data received
 
     PowerManager.WakeLock wl;
@@ -185,7 +186,7 @@ public class CoAPClient extends Activity {
 		btn_send = (Button)findViewById(R.id.btn_send);
 
 		continuous = (CheckBox) findViewById(R.id.continuous);
-		seconds = (EditText)findViewById(R.id.seconds);
+		secondsText = (EditText)findViewById(R.id.seconds);
 
 		statusText = (TextView) findViewById(R.id.textStatus);
 
@@ -194,23 +195,6 @@ public class CoAPClient extends Activity {
 
 		wv = (WebView)findViewById(R.id.wv1);
 		//~ setup UI elements
-
-		// storage for data received
-		try {
-			temp.put("color", "#d1002c");
-			temp.put("label", "Temperature (degC)");
-			hum.put("color", "#0066ff");
-			hum.put("label", "Humidity (%)");
-			volt.put("color", "#08ff00");
-			volt.put("label", "Voltage (V)");
-		} catch (JSONException e) {
-			Toast toast = Toast.makeText(getApplicationContext(),
-					"JSON parsing error.", 
-					Toast.LENGTH_LONG);
-			toast.show();
-			e.printStackTrace();
-		}
-		// ~storage for data received
 
 		setup_coap();
 
@@ -230,7 +214,7 @@ public class CoAPClient extends Activity {
 		rb_get.setOnClickListener(get_put_listener);
 		rb_put.setOnClickListener(get_put_listener);
 
-		// SEND -------
+		// SEND ONCE -------
 		btn_send.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 
@@ -245,13 +229,22 @@ public class CoAPClient extends Activity {
 					rt.start();
 
 					Log.d("CoAP", "sendRequest");
-					sendRequest(ipText.getText().toString(),
-							new Integer(portText.getText().toString()).intValue(),
-							uriSpinner.getSelectedItem().toString(),
-							(rb_get.isChecked() ?
-									coapConstants.COAP_REQUEST_GET :
-										coapConstants.COAP_REQUEST_PUT)
-							);
+					
+					try {
+						sendRequest(ipText.getText().toString(),
+								new Integer(portText.getText().toString()).intValue(),
+								uriSpinner.getSelectedItem().toString(),
+								(rb_get.isChecked() ?
+										coapConstants.COAP_REQUEST_GET :
+											coapConstants.COAP_REQUEST_PUT)
+								);
+					} catch (NumberFormatException e) {
+						Toast toast = Toast.makeText(getApplicationContext(),
+								"Number format for port wrong.", 
+								Toast.LENGTH_LONG);
+						toast.show();
+						e.printStackTrace();
+					}
 					Log.d("CoAP", "sendRequest~");
 				} else {
 					Toast toast = Toast.makeText(getApplicationContext(),
@@ -267,6 +260,32 @@ public class CoAPClient extends Activity {
 			public void onCheckedChanged(CompoundButton buttonView,
 					boolean isChecked) {
 				if (isChecked) {
+					
+					// storage for data received
+					dataTemp = new JSONArray();
+					dataHum = new JSONArray();
+					dataVolt = new JSONArray();
+
+					temp = new JSONObject();
+					hum = new JSONObject();
+					volt = new JSONObject();
+
+					try {
+						temp.put("color", "#d1002c");
+						temp.put("label", "Temperature (degC)");
+						hum.put("color", "#0066ff");
+						hum.put("label", "Humidity (%)");
+						volt.put("color", "#08ff00");
+						volt.put("label", "Voltage (V)");
+					} catch (JSONException e) {
+						Toast toast = Toast.makeText(getApplicationContext(),
+								"JSON parsing error.", 
+								Toast.LENGTH_LONG);
+						toast.show();
+						e.printStackTrace();
+					}
+					// ~storage for data received
+					
 					Log.d("CoAP", "-> continuous mode");
 					sv.setVisibility(View.GONE);
 					btn_send.setEnabled(false);
@@ -275,10 +294,27 @@ public class CoAPClient extends Activity {
 					wv.getSettings().setJavaScriptEnabled(true);
 					wv.loadUrl("file:///android_asset/flot/stats_graph.html");
 
-					startDate  = new Date(); 
-					reqthr = new RequesterThread();
-					reqthr.start();
-
+					startDate  = new Date();
+					
+					try {
+						int port = new Integer(portText.getText().toString()).intValue();
+						int seconds = new Integer(secondsText.getText().toString()).intValue();
+						
+						reqthr = new RequesterThread(getApplicationContext(),
+								ipText.getText().toString(),
+								port,
+								uriSpinner.getSelectedItem().toString(),
+								rb_get.isChecked() ?
+										coapConstants.COAP_REQUEST_GET :
+											coapConstants.COAP_REQUEST_PUT,
+								seconds
+								);
+						reqthr.start();
+						
+						secondsText.setEnabled(false);
+					} catch (NumberFormatException e) {
+						
+					}
 				} else {
 					Log.d("CoAP", "-> single shot mode");
 					sv.setVisibility(View.VISIBLE);
@@ -287,6 +323,7 @@ public class CoAPClient extends Activity {
 					if (reqthr != null) {
 						reqthr.requestStop();
 					}
+					secondsText.setEnabled(true);
 				}
 			}
 		};
@@ -448,8 +485,32 @@ public class CoAPClient extends Activity {
 	class RequesterThread extends Thread {
 		boolean doStop = false;
 
+		Context context;
+		
+		String ip;
+		int port;
+		String uri;
+		int method;
+		
+		int seconds_to_sleep;
+		
+		public RequesterThread(Context context,
+				String ip, int port,
+				String uri, int method,
+				int seconds_to_sleep) {
+			this.context = context;
+		
+			this.ip = ip;
+			this.port = port;
+			this.uri = uri;
+			this.method = method;
+			
+			this.seconds_to_sleep = seconds_to_sleep;
+		}
+		
 		public void run() {
 			Log.i(CoAPClient.LOG_TAG, "INF: RequesterThread run()");
+			Looper.prepare();
 			requestLoop();
 		}
 
@@ -467,18 +528,9 @@ public class CoAPClient extends Activity {
 				Log.d("CoAP", "LowerReceive started");
 
 				Log.i(CoAPClient.LOG_TAG, "INF: RequesterThread: next request...");
-				sendRequest(ipText.getText().toString(),
-						new Integer(portText.getText().toString()).intValue(),
-						uriSpinner.getSelectedItem().toString(),
-						(rb_get.isChecked() ?
-								coapConstants.COAP_REQUEST_GET :
-									coapConstants.COAP_REQUEST_PUT)
-						);
+				sendRequest(this.ip, this.port, this.uri, this.method);
 				try {
-					int inter_req_sec = new Integer(
-							seconds.getText().toString()
-							).intValue();
-					Thread.sleep(inter_req_sec*1000);
+					Thread.sleep(seconds_to_sleep*1000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -639,7 +691,7 @@ public class CoAPClient extends Activity {
 				}
 
 			} else {
-				responseTextView.append("URI not available");
+				responseTextView.append("URI not available\n");
 			}
 
 			uriHM.clear();
@@ -693,7 +745,6 @@ public class CoAPClient extends Activity {
 
 		return bArr;
 	}
-
 	
 	public void messageHandler(coap_context_t ctx, coap_listnode node,
 			String data) {
