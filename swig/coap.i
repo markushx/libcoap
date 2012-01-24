@@ -125,6 +125,7 @@ int coap_get_data_java(coap_pdu_t *pdu, unsigned char *data) {
 
   return len;
 }
+
   %}
 
 %ignore __quad_t;
@@ -498,6 +499,17 @@ signed
     return stAddr;
   }
 
+  jint get_port(struct sockaddr_in6 src) {
+
+    jint iPort;
+
+    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+
+    iPort = ntohs(src.sin6_port);
+
+    return iPort;
+  }
+
   void sockaddr_in6_free(struct sockaddr_in6 *p) {
     //printf("INF: sockaddr_in6_free()\n");
     free(p);
@@ -510,6 +522,7 @@ void register_message_handler(coap_context_t *ctx, jobject client_server);
 void deregister_message_handler(coap_context_t *ctx, jobject client_server);
 struct sockaddr_in6 *sockaddr_in6_create(int family, int port, jstring addr);
 jstring get_addr(struct sockaddr_in6 src);
+jint get_port(struct sockaddr_in6 src);
 jbyteArray get_bytes(coap_pdu_t pdu);
 void coap_read(coap_context_t *ctx, struct sockaddr_in6 src, jbyteArray receivedData, int length);
 void sockaddr_in6_free(struct sockaddr_in6 *p);
