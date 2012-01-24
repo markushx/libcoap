@@ -12,190 +12,237 @@
         android:orientation="vertical" >
 
         <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:orientation="vertical" >
+            android:id="@+id/coap_sms_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" >
 
-            <LinearLayout
-                android:id="@+id/linearLayout3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
-
-                <TextView
-                    android:id="@+id/url_before_ip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/coap"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-                <LinearLayout
-                    android:id="@+id/textDocusDummy"
-                    android:layout_width="0px"
-                    android:layout_height="0px"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true" />
-
-                <EditText
-                    android:id="@+id/editTextIP"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/hintIP"
-                    android:lines="1"
-                    android:text="@string/defaulIP" />
-
-                <TextView
-                    android:id="@+id/url_between_ip_port"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/between_ip_port"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-                <EditText
-                    android:id="@+id/editTextPort"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/hintPort"
-                    android:inputType="number"
-                    android:lines="1"
-                    android:text="@string/defaultPort" >
-                </EditText>
-
-                <TextView
-                    android:id="@+id/url_between_port_uri"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/url_between_port_uri"
-                    android:textAppearance="?android:attr/textAppearanceMedium" />
-
-                <Spinner
-                    android:id="@+id/uriSpinner"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/linearLayout2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
-
-                <RadioGroup
-                    android:id="@+id/radioGroup1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal" >
-
-                    <RadioButton
-                        android:id="@+id/rbGet"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginRight="5dip"
-                        android:checked="true"
-                        android:text="@string/get" />
-
-                    <RadioButton
-                        android:id="@+id/rbPut"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginRight="5dip"
-                        android:text="@string/put" />
-
-                    <EditText
-                        android:id="@+id/payloadText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="2.53"
-                        android:hint="Enter payload..."
-                        android:inputType="number"
-                        android:lines="1"
-                        android:visibility="gone" />
-                </RadioGroup>
-            </LinearLayout>
-
-            <HorizontalScrollView
-                android:id="@+id/horizontalScrollView1"
+            <TextView
+                android:id="@+id/url_sms_before_telephone_number"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="2dip" >
-
-                <LinearLayout
-                    android:id="@+id/linearLayout6"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" >
-
-                    <Button
-                        android:id="@+id/btn_send"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dip"
-                        android:text="Send" />
-
-                    <CheckBox
-                        android:id="@+id/rbToken"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginRight="5dip"
-                        android:text="@string/token" />
-
-                    <CheckBox
-                        android:id="@+id/continuous"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/continuous" />
-
-                    <EditText
-                        android:id="@+id/seconds"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:inputType="number"
-                        android:text="@string/seconds_5" />
-
-                    <TextView
-                        android:id="@+id/TextView01"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/seconds"
-                        android:textAppearance="?android:attr/textAppearanceMedium" />
-                </LinearLayout>
-            </HorizontalScrollView>
-
-            <View
-                android:id="@+id/view1"
-                android:layout_width="fill_parent"
-                android:layout_height="2dip"
-                android:background="#741BE0" />
+                android:text="@string/coap_sms_before_telephone_number"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
 
             <LinearLayout
-                android:id="@+id/linearLayout1"
+                android:id="@+id/textFocusDummySMS"
+                android:layout_width="0px"
+                android:layout_height="0px"
+                android:focusable="true"
+                android:focusableInTouchMode="true" >
+
+                <requestFocus />
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/editTextTelephoneNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:hint="@string/hintIP"
+                android:lines="1"
+                android:text="@string/defaultTelNumber" >
+            </EditText>
+
+            <TextView
+                android:id="@+id/url_sms_between_tel_number_uri"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/url_sms_after_telephone_number"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <Spinner
+                android:id="@+id/uriSpinnerSMS"
+                android:layout_width="120dip"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dip"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/coap_ip_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/url_before_ip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/coap"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <LinearLayout
+                android:id="@+id/textFocusDummy"
+                android:layout_width="0px"
+                android:layout_height="0px"
+                android:focusable="true"
+                android:focusableInTouchMode="true" >
+
+                <requestFocus />
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/editTextIP"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:hint="@string/hintIP"
+                android:lines="1"
+                android:text="@string/defaulIP" />
+
+            <TextView
+                android:id="@+id/url_between_ip_port"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/between_ip_port"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <EditText
+                android:id="@+id/editTextPort"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:hint="@string/hintPort"
+                android:inputType="number"
+                android:lines="1"
+                android:text="@string/defaultPort" >
+            </EditText>
+
+            <TextView
+                android:id="@+id/url_between_port_uri"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/url_between_port_uri"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <Spinner
+                android:id="@+id/uriSpinner"
+                android:layout_width="120dip"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="5dip"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/linearLayout2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <RadioGroup
+                android:id="@+id/radioGroup1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <RadioButton
+                    android:id="@+id/rbGet"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="5dip"
+                    android:checked="true"
+                    android:text="@string/get" />
+
+                <RadioButton
+                    android:id="@+id/rbPut"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="5dip"
+                    android:text="@string/put" />
+
+                <EditText
+                    android:id="@+id/payloadText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2.53"
+                    android:hint="Enter payload..."
+                    android:inputType="number"
+                    android:lines="1"
+                    android:visibility="gone" />
+            </RadioGroup>
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/horizontalScrollView1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="2dip" >
+
+            <LinearLayout
+                android:id="@+id/linearLayout6"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" >
 
+                <Button
+                    android:id="@+id/btn_send"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dip"
+                    android:text="Send" />
+
+                <CheckBox
+                    android:id="@+id/rbToken"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="5dip"
+                    android:text="@string/token" />
+
+                <CheckBox
+                    android:id="@+id/continuous"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/continuous" />
+
+                <EditText
+                    android:id="@+id/seconds"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:inputType="number"
+                    android:text="@string/seconds_5" />
+
                 <TextView
-                    android:id="@+id/textStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_weight="0.11"
-                    android:text="Status" />
+                    android:id="@+id/TextView01"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/seconds"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
             </LinearLayout>
+        </HorizontalScrollView>
 
-            <ScrollView
-                android:id="@+id/scrollView1"
+        <View
+            android:id="@+id/view1"
+            android:layout_width="fill_parent"
+            android:layout_height="2dip"
+            android:background="#741BE0" >
+        </View>
+
+        <LinearLayout
+            android:id="@+id/linearLayout1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/textStatus"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom" >
-
-                <LinearLayout
-                    android:id="@+id/linearLayout5"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" >
-
-                    <TextView
-                        android:id="@+id/responseTextView"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-            </ScrollView>
+                android:layout_height="match_parent"
+                android:layout_weight="0.11"
+                android:text="Status" >
+            </TextView>
         </LinearLayout>
+
+        <ScrollView
+            android:id="@+id/scrollView1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <LinearLayout
+                android:id="@+id/linearLayout5"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" >
+
+                <TextView
+                    android:id="@+id/responseTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+        </ScrollView>
     </LinearLayout>
 
     <LinearLayout

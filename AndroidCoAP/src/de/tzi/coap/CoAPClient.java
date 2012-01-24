@@ -430,10 +430,12 @@ public class CoAPClient extends Activity {
 		// --------
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 		//ipText.setText(settings.getString("ip", ""));
+//		ipText.setText("2001:0638:0708:1003:0226:37ff:fe9a:5d08"); //thp: remove
 		ipText.setText("2001:0638:0708:1003:9221:55ff:fee4:ec58"); // mab: remove
 		portText.setText(settings.getString("port", ""));
 
 		//setup UI for proper mode: SMS resp. IP 
+		//TDOD: thp: why not calling setOperationMode???
 		if (settings.getInt("mode", MODE_IP) == MODE_IP) {
 			coap_sms_layout.setVisibility(View.GONE);
 			coap_ip_layout.setVisibility(View.VISIBLE);
@@ -756,7 +758,6 @@ public class CoAPClient extends Activity {
 		// free destination
 //		coap.sockaddr_in6_free(dst);
 
-		setStatus("CoAP request (MID: "+pdu.getHdr().getId()+") sent.");
 	}
 	
 	//JNI callback to replace C socket with Java DatagramSocket
