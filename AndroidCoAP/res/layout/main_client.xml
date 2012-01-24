@@ -5,7 +5,53 @@
     android:orientation="vertical" >
 
     <LinearLayout
-        android:id="@+id/linearLayout3"
+        android:id="@+id/coap_sms_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone" >
+
+        <TextView
+            android:id="@+id/url_sms_before_telephone_number"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/coap_sms_before_telephone_number"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <LinearLayout
+            android:id="@+id/textFocusDummySMS"
+            android:layout_width="0px"
+            android:layout_height="0px"
+            android:focusable="true"
+            android:focusableInTouchMode="true" >
+            <requestFocus />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/editTextTelephoneNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:hint="@string/hintIP"
+            android:lines="1"
+            android:text="@string/defaultTelNumber" >
+        </EditText>
+
+        <TextView
+            android:id="@+id/url_sms_between_tel_number_uri"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/url_sms_after_telephone_number"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <Spinner
+            android:id="@+id/uriSpinnerSMS"
+            android:layout_width="120dip"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="5dip"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/coap_ip_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" >
 
@@ -17,12 +63,14 @@
             android:textAppearance="?android:attr/textAppearanceMedium" />
 
         <LinearLayout
-            android:id="@+id/textDocusDummy"
+            android:id="@+id/textFocusDummy"
             android:layout_width="0px"
             android:layout_height="0px"
             android:focusable="true"
-            android:focusableInTouchMode="true" />
-
+            android:focusableInTouchMode="true">
+            <requestFocus />
+        </LinearLayout>
+        
         <EditText
             android:id="@+id/editTextIP"
             android:layout_width="wrap_content"

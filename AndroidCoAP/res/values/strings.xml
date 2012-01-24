@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-  <string name="app_name">AndroidCoAP</string>
+  <string name="app_name">Android CoAP</string>
+  <string name="app_name_client">Android CoAP Client</string>
+  <string name="app_name_server">Android CoAP Server</string>
+      
   <string name="run">Run</string>
   <string name="stop">Stop</string>
   <string name="get">GET</string>
@@ -17,6 +20,7 @@
     <item>l</item>
     <item>ck</item>
     <item>rt</item>
+    <item>time</item>
   </string-array>
 
   <string name="IP">IP:</string>
@@ -33,7 +37,7 @@
   <string name="menu_item_about">About</string>
   <string name="about_text">libcoapClient</string>
   <string name="about_version">Version 1.1 Beta</string>
-  <string name="about_author_email">thp@comnets.uni-bremen.de</string>
+  <string name="about_author_email">{thp|mab}@comnets.uni-bremen.de</string>
   <string name="about_project_url"></string>
   <color name="blue">#0084E4</color>
 
@@ -48,5 +52,9 @@
   <string name="coap">coap://[</string>
   <string name="between_ip_port">]:</string>
   <string name="url_between_port_uri">/</string>
+  <string name="coap_sms_before_telephone_number">coap+sms://[</string>
+  <string name="url_sms_after_telephone_number">]/</string>
+  <string name="defaultTelNumber">+491722601440</string>
+  <string name="menu_item_mode">Mode</string>
 
 </resources>
