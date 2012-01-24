@@ -2,8 +2,8 @@
 <resources>
 
   <string name="app_name">Android CoAP</string>
-  <string name="app_name_client">Android CoAP Client</string>
-  <string name="app_name_server">Android CoAP Server</string>
+  <string name="app_name_client">CoAP Client</string>
+  <string name="app_name_server">CoAP Server</string>
       
   <string name="run">Run</string>
   <string name="stop">Stop</string>
