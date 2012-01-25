@@ -12,6 +12,7 @@ import android.widget.EditText;
 public class SettingsActivity extends Activity {
 	SharedPreferences settings;
 	EditText resourcesText;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -24,7 +25,6 @@ public class SettingsActivity extends Activity {
 
 		saveButton.setOnClickListener(new OnClickListener() {
 
-			@Override
 			public void onClick(View v) {
 				//	save stuff
 				SharedPreferences.Editor editor = settings.edit();
@@ -37,7 +37,6 @@ public class SettingsActivity extends Activity {
 
 		cancelButton.setOnClickListener(new OnClickListener() {
 
-			@Override
 			public void onClick(View v) {
 				finish();
 			}
