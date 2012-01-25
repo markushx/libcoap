@@ -6,6 +6,8 @@ import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.Vector;
 
 import org.json.JSONArray;
@@ -87,7 +89,7 @@ public class CoAPClient extends Activity {
 
 	static final int MODE_IP  = 0;
 	static final int MODE_SMS = 1;
-	
+
 	ArrayAdapter<String> adapter;
 
 	// UI elements	
@@ -146,7 +148,7 @@ public class CoAPClient extends Activity {
 
 	BroadcastReceiver sentReceiver;
 	BroadcastReceiver replyReceiver;
-	
+
 	static {
 		try{
 			Log.i(LOG_TAG, "static load library");
@@ -429,13 +431,12 @@ public class CoAPClient extends Activity {
 
 		// --------
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-		//ipText.setText(settings.getString("ip", ""));
-//		ipText.setText("2001:0638:0708:1003:0226:37ff:fe9a:5d08"); //thp: remove
-		ipText.setText("2001:0638:0708:1003:9221:55ff:fee4:ec58"); // mab: remove
+		ipText.setText(settings.getString("ip", ""));
+		//		ipText.setText("2001:0638:0708:1003:0226:37ff:fe9a:5d08"); //thp: remove
+		//		ipText.setText("2001:0638:0708:1003:9221:55ff:fee4:ec58"); // mab: remove
 		portText.setText(settings.getString("port", ""));
-
+		
 		//setup UI for proper mode: SMS resp. IP 
-		//TDOD: thp: why not calling setOperationMode???
 		if (settings.getInt("mode", MODE_IP) == MODE_IP) {
 			coap_sms_layout.setVisibility(View.GONE);
 			coap_ip_layout.setVisibility(View.VISIBLE);
@@ -457,7 +458,9 @@ public class CoAPClient extends Activity {
 		uriSpinner.setSelection(settings.getInt("resource", settings.getInt("selUri", 0)));	
 		uriSpinnerSMS.setAdapter(adapter);
 		uriSpinnerSMS.setSelection(settings.getInt("resource", settings.getInt("selUri", 0)));	
-		adapter.notifyDataSetChanged();		
+		adapter.notifyDataSetChanged();
+
+		secondsText.setText(settings.getString("interval", "5"));
 	}
 
 	@Override
@@ -472,6 +475,7 @@ public class CoAPClient extends Activity {
 		editor.putInt("selUri", uriSpinner.getSelectedItemPosition());
 		editor.putInt("resourceSMS", uriSpinnerSMS.getSelectedItemPosition());
 		editor.putInt("selUriSMS", uriSpinnerSMS.getSelectedItemPosition());
+		editor.putString("interval", secondsText.getText().toString());
 
 		StringBuilder spinnerEntries = new StringBuilder();
 		for (int i = 0; i < uriSpinner.getCount(); i++) {
@@ -509,7 +513,7 @@ public class CoAPClient extends Activity {
 
 		//release wake-lock
 		wl.release();
-		
+
 		// unregister BroadcastReceiver for sent SMS
 		unregisterReceiver(sentReceiver);
 		unregisterReceiver(replyReceiver);
@@ -533,7 +537,7 @@ public class CoAPClient extends Activity {
 		case R.id.menu_item_mode:
 			showDialog(MODE_DIALOG);
 			return true;
-			
+
 		case R.id.menu_item_about:
 			showDialog(ABOUT_DIALOG);
 			return true;
@@ -601,17 +605,17 @@ public class CoAPClient extends Activity {
 			AlertDialog.Builder builder = new AlertDialog.Builder(this);
 			builder.setTitle("Choose the client's transport mode");
 			builder.setItems(items, new DialogInterface.OnClickListener() {
-			    public void onClick(DialogInterface dialog, int item) {
-			        Toast.makeText(getApplicationContext(),
-			        		items[item],
-			        		Toast.LENGTH_SHORT).show();
-			        
-			        setOperationMode(item);
-			    }
+				public void onClick(DialogInterface dialog, int item) {
+					Toast.makeText(getApplicationContext(),
+							items[item],
+							Toast.LENGTH_SHORT).show();
+
+					setOperationMode(item);
+				}
 			});
 			AlertDialog alert = builder.create();
 			return alert;
-			
+
 		default:
 			return null;
 		}
@@ -622,7 +626,7 @@ public class CoAPClient extends Activity {
 		SharedPreferences.Editor editor = settings.edit();	
 		editor.putInt("mode", item);
 		editor.commit();
-		
+
 		if (item == MODE_IP) {
 			coap_sms_layout.setVisibility(View.GONE);
 			coap_ip_layout.setVisibility(View.VISIBLE);
@@ -631,7 +635,7 @@ public class CoAPClient extends Activity {
 			coap_ip_layout.setVisibility(View.GONE);			
 		}
 	}
-	
+
 	public String initResourcePref() {
 		String entries [] = getResources().getStringArray(R.array.URIs);
 		StringBuilder result = new StringBuilder();
@@ -695,7 +699,7 @@ public class CoAPClient extends Activity {
 
 				Log.i(CoAPClient.LOG_TAG, "INF: RequesterThread: next request...");
 				//sendRequest(this.ip, this.port, this.uri, this.method);
-				
+
 				SWIGTYPE_p_sockaddr_in6 dst = null;
 				dst = coap.sockaddr_in6_create(
 						coapConstants.AF_INET6,
@@ -748,7 +752,7 @@ public class CoAPClient extends Activity {
 
 		//TODO: token is added, use this on receive path to differentiate?
 		uriHM.put(pdu.getHdr().getId(), uri);
-		
+
 		// send pdu
 		Log.i(LOG_TAG, "INF: send_confirmed: " + ctx + " " + dst + " " + pdu);
 		coap.coap_send_confirmed(ctx, dst, pdu);
@@ -756,10 +760,10 @@ public class CoAPClient extends Activity {
 		Log.i(LOG_TAG, "INF: send_confirmed~");
 
 		// free destination
-//		coap.sockaddr_in6_free(dst);
+		//		coap.sockaddr_in6_free(dst);
 
 	}
-	
+
 	//JNI callback to replace C socket with Java DatagramSocket
 	public void coap_send_impl(coap_context_t ctx, SWIGTYPE_p_sockaddr_in6 dst, 
 			coap_pdu_t pdu,
@@ -800,20 +804,20 @@ public class CoAPClient extends Activity {
 	}
 
 	public void lowerSendSMS(byte[] sendData, String phoneNo) {
-        PendingIntent pi = PendingIntent.getActivity(this, 0,
-                new Intent(this, CoAPClient.class), 0);
+		PendingIntent pi = PendingIntent.getActivity(this, 0,
+				new Intent(this, CoAPClient.class), 0);
 
-    	SmsManager sms = SmsManager.getDefault();
-    	
-    	//Log.i(LOG_TAG, "[SMSApp] byte[]: "+message + "/" + message.length);
-    	//String str = new String(message, "utf-8");
+		SmsManager sms = SmsManager.getDefault();
 
-    	String str = Base64.encodeToString(sendData, Base64.DEFAULT);
+		//Log.i(LOG_TAG, "[SMSApp] byte[]: "+message + "/" + message.length);
+		//String str = new String(message, "utf-8");
 
-    	Log.i(LOG_TAG, "[SMS] String: " + str + "/"+str.length());
-    	sms.sendTextMessage(phoneNo, null, str, pi, null);
-    	//sms.sendDataMessage(phoneNumber, null, (short)8091, message, pi, null);
-    	Log.i(LOG_TAG, "[SMS] text sms sent");
+		String str = Base64.encodeToString(sendData, Base64.DEFAULT);
+
+		Log.i(LOG_TAG, "[SMS] String: " + str + "/"+str.length());
+		sms.sendTextMessage(phoneNo, null, str, pi, null);
+		//sms.sendDataMessage(phoneNumber, null, (short)8091, message, pi, null);
+		Log.i(LOG_TAG, "[SMS] text sms sent");
 	}
 
 	public class SmsReceiver extends BroadcastReceiver {
@@ -845,13 +849,13 @@ public class CoAPClient extends Activity {
 					Log.i(LOG_TAG, "[SMS] byte[] " + msgs[0].getMessageBody().getBytes("utf-8"));
 					Log.i(LOG_TAG, "[SMS] length " + msgs[0].getMessageBody().getBytes("utf-8").length);
 
-		            byte[] b = Base64.decode(msgs[0].getMessageBody(), Base64.DEFAULT);	          
-		            Log.i(LOG_TAG, "[SMS] base64[] " + b);
-					
-		            //TODO: act only on white-listed telephone numbers !!!
-		            // faking an IPv6 address to make libcoap happily match request and response
-		            SWIGTYPE_p_sockaddr_in6 src;
-		            
+					byte[] b = Base64.decode(msgs[0].getMessageBody(), Base64.DEFAULT);	          
+					Log.i(LOG_TAG, "[SMS] base64[] " + b);
+
+					//TODO: act only on white-listed telephone numbers !!!
+					// faking an IPv6 address to make libcoap happily match request and response
+					SWIGTYPE_p_sockaddr_in6 src;
+
 					int port = 0;
 					try {
 						port = new Integer(portText.getText().toString()).intValue();
@@ -864,7 +868,7 @@ public class CoAPClient extends Activity {
 
 					coap.coap_read(ctx, src, b, b.length);
 					coap.coap_dispatch(ctx);
-		            
+
 					/*Log.i(LOG_TAG,
 							"[SMSApp] Coap Message reconstruction successful: " + msg.toString());
 					Toast.makeText(context, "CoAP: " + msg.toString(),
@@ -878,9 +882,9 @@ public class CoAPClient extends Activity {
 				// sendSMS(msgs[0].getOriginatingAddress(), "Selber hallo.");
 			}
 		}
-	
+
 	}
-	
+
 	private void handleR(ResourceR val) {
 		int temp_val = val.getTemp();
 		int hum_val  = val.getHum();
@@ -892,7 +896,7 @@ public class CoAPClient extends Activity {
 			JSONArray entryTemp = new JSONArray();
 			JSONArray entryHum = new JSONArray();
 			JSONArray entryVolt = new JSONArray();
-			
+
 			float diff = (new Date()).getTime() - startDate.getTime();
 			try {
 				entryTemp.put(diff / 1000);
@@ -954,14 +958,14 @@ public class CoAPClient extends Activity {
 				} else {
 					responseTextView.append("URI "+uriHM.get(msg.arg1)+" not found\n");
 				}
-				
+
 			} else {
 				responseTextView.append("URI not available\n");
 			}
 
 			//scroll down to bottom
 			sv.fullScroll(ScrollView.FOCUS_DOWN);
-			
+
 			uriHM.clear();
 		}
 	};
@@ -993,8 +997,8 @@ public class CoAPClient extends Activity {
 			}else {
 				wv.loadUrl("file:///android_asset/flot/stats_graph.html");
 			}
-			
-			
+
+
 		} else {
 			Toast toast = Toast.makeText(getApplicationContext(),
 					"JSON data has errors.", 
