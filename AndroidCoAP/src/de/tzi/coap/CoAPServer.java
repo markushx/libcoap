@@ -565,12 +565,10 @@ public class CoAPServer extends Activity {
 	}
 	*/
 	void init_resources(coap_context_t ctx) {
-		//FIXME!!!
-		String u_time = "/time";
 		//str d_time = "server's local time and date";
 		
-		coap_resource_t r = null; // TODO: really init??
-		coap_uri_t uri = coap.coap_new_uri(u_time, u_time.length());
+		//coap_resource_t r = null; // TODO: really init??
+		//coap_uri_t uri = coap.coap_new_uri(u_time, u_time.length());
 		
 		//TODO: move most of the following into CoapJavaResource:
 		
@@ -584,9 +582,9 @@ public class CoAPServer extends Activity {
 		//SWIGTYPE_p_f_p_coap_uri_t_p_unsigned_char_unsigned_int_p_unsigned_char_p_unsigned_int_p_int__int arg0 = null; // TODO: really init
 		//r.setData(arg0);
 		//r.setMaxage(1);
-		coap.coap_add_resource(ctx, r);
+		//coap.coap_add_resource(ctx, r);
 		
-		resourceMap.put(u_time, new CoapJavaResourceTime((short)coapConstants.COAP_MEDIATYPE_TEXT_PLAIN));
+		resourceMap.put("/time", new CoapJavaResourceTime((short)coapConstants.COAP_MEDIATYPE_TEXT_PLAIN));
 	}
 
 	private void setOperationMode(int item) {
