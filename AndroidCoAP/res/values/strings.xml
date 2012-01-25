@@ -9,6 +9,7 @@
   <string name="stop">Stop</string>
   <string name="get">GET</string>
   <string name="put">PUT</string>
+  <string name="payloadHint">Enter payload&#8230;</string>
   <string name="token">Token</string>
   <string name="ok">Ok</string>
 
@@ -25,7 +26,7 @@
 
   <string name="IP">IP:</string>
   <string name="hintIP">fec0::3</string>
-  <string name="defaulIP">fec0::3</string>
+  <string name="defaultIP">fec0::3</string>
   <string name="port">"Port: "</string>
   <string name="hintPort">61616</string>
   <string name="defaultPort">61616</string>
@@ -53,8 +54,9 @@
   <string name="between_ip_port">]:</string>
   <string name="url_between_port_uri">/</string>
   <string name="coap_sms_before_telephone_number">coap+sms://[</string>
-  <string name="url_sms_after_telephone_number">]/</string>
-  <string name="defaultTelNumber">+491722601440</string>
+  <string name="url_sms_between_telephone_number_uri">]/</string>
+  <string name="url_sms_after_telephone_number">]</string>
+  <string name="defaultTelNumber">5556</string>
   <string name="menu_item_mode">Mode</string>
-
+  <string name="status">Status</string>
 </resources>

@@ -86,7 +86,7 @@
                 android:layout_height="wrap_content"
                 android:hint="@string/hintIP"
                 android:lines="1"
-                android:text="@string/defaulIP" />
+                android:text="@string/defaultIP" />
 
             <TextView
                 android:id="@+id/url_between_ip_port"

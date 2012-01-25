@@ -34,12 +34,11 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.telephony.SmsManager;
-import android.telephony.SmsMessage;
+import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
 
@@ -49,8 +48,8 @@ import de.tzi.coap.jni.coap_context_t;
 import de.tzi.coap.jni.coap_pdu_t;
 import de.tzi.coap.jni.coap_listnode;
 import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
-import de.tzi.coap.jni.coap_resource_t;
 import de.tzi.coap.jni.coap_uri_t;
+import de.tzi.coap.sms.CoAPSMSReceiver;
 
 /**
  * Sample implementation of a CoAP server for Android using SWIGified libcoap.
@@ -61,7 +60,7 @@ import de.tzi.coap.jni.coap_uri_t;
 
 public class CoAPServer extends Activity {
 
-	public static final String LOG_TAG = "CoAP";
+	public static final String LOG_TAG = "CoAPServer";
 
 	HashMap<String, CoapJavaResource> resourceMap = new HashMap<String, CoapJavaResource>(); 
 	
@@ -79,10 +78,10 @@ public class CoAPServer extends Activity {
 	LinearLayout coap_ip_layout;
 	EditText ipText;
 	EditText portText;
-	Spinner uriSpinner;
+	//Spinner uriSpinner;
 
-	//LinearLayout coap_sms_layout;
-	//EditText noText;
+	LinearLayout coap_sms_layout;
+	EditText noText;
 	//Spinner uriSpinnerSMS;
 
 	ToggleButton btn_start;
@@ -108,6 +107,7 @@ public class CoAPServer extends Activity {
 	// SMS
 	BroadcastReceiver sentReceiver;
 	BroadcastReceiver replyReceiver;
+	String tempFromPhoneNumber; // temp storage for where the SMS came from
 	
 	static {
 		try{
@@ -137,6 +137,9 @@ public class CoAPServer extends Activity {
 		wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "DoNotDimScreen");
 		wl.acquire();
 
+		// receive incoming SMS, register only when start button has been pressed
+		replyReceiver = new CoAPSMSReceiver(this);
+
 		// register us for the SMS sent notification
 		sentReceiver = new BroadcastReceiver()	{
 			public void onReceive(Context context, Intent intent)
@@ -156,19 +159,25 @@ public class CoAPServer extends Activity {
 			}
 		};
 		registerReceiver(sentReceiver, new IntentFilter("SMS_SENT"));
-
-		// register us for incoming SMS
-		replyReceiver = new SmsReceiver();
-		registerReceiver(replyReceiver, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
 		
 		// setup UI elements
 		coap_ip_layout = (LinearLayout)findViewById(R.id.coap_ip_layout);
 		ipText = (EditText)findViewById(R.id.editTextIP);
+		ipText.setEnabled(false);
+		ipText.setText(get_global_ipv6_address());
 		portText = (EditText)findViewById(R.id.editTextPort);
-		uriSpinner = (Spinner) findViewById(R.id.uriSpinner);
+		//uriSpinner = (Spinner) findViewById(R.id.uriSpinner);
 
-		//coap_sms_layout = (LinearLayout)findViewById(R.id.coap_sms_layout);
-		//noText = (EditText)findViewById(R.id.editTextTelephoneNumber);
+		coap_sms_layout = (LinearLayout)findViewById(R.id.coap_sms_layout);
+		noText = (EditText)findViewById(R.id.editTextTelephoneNumber);
+		noText.setEnabled(false);
+		
+		String phoneno = get_telephonenumber(); 
+		if (phoneno == null) {
+			//phoneno = getSharedPreferences(PREFS_NAME, 0).getString("phoneNo", "");
+			phoneno = "unknown";
+		}
+		noText.setText(phoneno);
 		//uriSpinnerSMS = (Spinner) findViewById(R.id.uriSpinnerSMS);
 
 		btn_start = (ToggleButton)findViewById(R.id.startButton);
@@ -181,8 +190,7 @@ public class CoAPServer extends Activity {
 
 		btn_start.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 			public void onCheckedChanged(CompoundButton button, boolean checked) {
-				if (checked == true) { 
-					// start the server
+				if (checked == true) {
 
 					int port = coapConstants.COAP_DEFAULT_PORT;
 					try {
@@ -195,19 +203,30 @@ public class CoAPServer extends Activity {
 						portText.setText(""+coapConstants.COAP_DEFAULT_PORT);
 					}
 
-					setup_coap(port);
+					setup_coap(port); // for SMS port is fake...
+					
+					if (getSharedPreferences(PREFS_NAME, 0).getInt("mode", MODE_IP) == MODE_IP) {
+						//IP
 
-					responseTextView.setText("");
-					Log.d("CoAP", "start LowerReceive");
-					lr = new LowerReceive(ctx, serverSocket);
-					lr.start();
-					Log.d("CoAP", "LowerReceive started");
-					//rt = new Retransmitter(ctx);
-					//rt.start();
+						// start the server
+						startServer(port);
+						
+						responseTextView.setText("");
+						Log.d("CoAP", "start LowerReceive");
+						lr = new LowerReceive(ctx, serverSocket);
+						lr.start();
+						Log.d("CoAP", "LowerReceive started");
+						//rt = new Retransmitter(ctx);
+						//rt.start();
 
+					} else {
+						//SMS
+						
+						// register us for incoming SMS
+						registerReceiver(replyReceiver, new IntentFilter("android.provider.Telephony.SMS_RECEIVED"));
+					}
 				} else {
 					// stop the server
-
 					stopServer();
 				}
 			}
@@ -215,21 +234,17 @@ public class CoAPServer extends Activity {
 
 		// --------
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-		ipText.setText(settings.getString("ip", ""));
+		//ipText.setText(settings.getString("ip", ""));
 		portText.setText(settings.getString("port", ""));
 
 		//setup UI for proper mode: SMS resp. IP 
-		/*if (settings.getInt("mode", MODE_IP) == MODE_IP) {
+		if (settings.getInt("mode", MODE_IP) == MODE_IP) {
 			coap_sms_layout.setVisibility(View.GONE);
 			coap_ip_layout.setVisibility(View.VISIBLE);
 		} else {
 			coap_sms_layout.setVisibility(View.VISIBLE);
 			coap_ip_layout.setVisibility(View.GONE);	
-		}*/
-	}
-
-	public void stopServer() {
-		//TODO: implement
+		}
 	}
 	
 	@Override
@@ -255,8 +270,9 @@ public class CoAPServer extends Activity {
 
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 		SharedPreferences.Editor editor = settings.edit();
-		editor.putString("ip", ipText.getText().toString());
+		//editor.putString("ip", ipText.getText().toString());
 		editor.putString("port", portText.getText().toString());
+		editor.putString("phoneNo", noText.getText().toString());
 		//editor.putInt("resource", uriSpinner.getSelectedItemPosition());
 		//editor.putInt("selUri", uriSpinner.getSelectedItemPosition());
 		//editor.putInt("resourceSMS", uriSpinnerSMS.getSelectedItemPosition());
@@ -298,14 +314,20 @@ public class CoAPServer extends Activity {
 		}
 
 		// close server socket
-		serverSocket.close();
+		try {
+			serverSocket.close();
+		} catch (Exception e) {
+		}
 		
 		//release wake-lock
 		wl.release();
 		
 		// unregister BroadcastReceiver for sent SMS
-		unregisterReceiver(sentReceiver);
-		unregisterReceiver(replyReceiver);
+		try {
+			unregisterReceiver(sentReceiver);
+			unregisterReceiver(replyReceiver);
+		} catch (Exception e) {
+		}
 	}
 
 	@Override
@@ -392,7 +414,7 @@ public class CoAPServer extends Activity {
 			final CharSequence[] items = {"IP", "SMS"};
 
 			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			builder.setTitle("Choose the client's transport mode");
+			builder.setTitle("Choose the server's transport mode");
 			builder.setItems(items, new DialogInterface.OnClickListener() {
 			    public void onClick(DialogInterface dialog, int item) {
 			        Toast.makeText(getApplicationContext(),
@@ -426,26 +448,26 @@ public class CoAPServer extends Activity {
 		coap.register_message_handler(ctx, this);
 		Log.i(LOG_TAG, "INF: registered message handler");
 		init_resources(ctx);
- /*
-		try {
-			ListNets ln = new ListNets();
-			ln.init_ipv6();
-		} catch (SocketException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-*/
-		Log.e(LOG_TAG, "workaround: " + get_global_ipv6_address());
-		
-	 	String global_ipv6_localhost = get_global_ipv6_address();
-		
+	}
+
+	/*
+	try {
+		ListNets ln = new ListNets();
+		ln.init_ipv6();
+	} catch (SocketException e1) {
+		// TODO Auto-generated catch block
+		e1.printStackTrace();
+	}
+	*/
+
+	public void startServer(int port) {
 		try {
 			Log.i(LOG_TAG, "INF: opening new socket on port " + port);
 			serverSocket = new DatagramSocket(null);
 			serverSocket.setReuseAddress(true);
 			try {
 				Log.i(LOG_TAG, "INF: localAddr");
-				SocketAddress localAddr = new InetSocketAddress((Inet6Address)InetAddress.getByName(global_ipv6_localhost), port);
+				SocketAddress localAddr = new InetSocketAddress((Inet6Address)InetAddress.getByName(ipText.getText().toString()), port);
 				Log.i(LOG_TAG, "INF: binding socket");
 				serverSocket.bind(localAddr);
 				Log.i(LOG_TAG, "INF: bound socket");
@@ -464,6 +486,11 @@ public class CoAPServer extends Activity {
 			e.printStackTrace();
 		}
 	}
+	
+	public void stopServer() {
+		//TODO: implement
+	}
+
 	
 	/*
 	public class ListNets 
@@ -487,6 +514,13 @@ public class CoAPServer extends Activity {
         }
     }
 	*/
+	
+	String get_telephonenumber() {
+		TelephonyManager tMgr = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+		Log.i(LOG_TAG, "Number1: " + tMgr.getLine1Number());
+		Log.i(LOG_TAG, "NumberV: " + tMgr.getVoiceMailNumber());
+		return tMgr.getLine1Number();
+	}
 	
 	String get_global_ipv6_address() {
 		Boolean ipv6Available = false;
@@ -594,10 +628,10 @@ public class CoAPServer extends Activity {
 		editor.commit();
 		
 		if (item == MODE_IP) {
-			//coap_sms_layout.setVisibility(View.GONE);
+			coap_sms_layout.setVisibility(View.GONE);
 			coap_ip_layout.setVisibility(View.VISIBLE);
 		} else {
-			//coap_sms_layout.setVisibility(View.VISIBLE);
+			coap_sms_layout.setVisibility(View.VISIBLE);
 			coap_ip_layout.setVisibility(View.GONE);			
 		}
 	}
@@ -743,7 +777,7 @@ public class CoAPServer extends Activity {
 		
 		Log.i(LOG_TAG, "INF: callback coap_send_impl @ "+System.currentTimeMillis());
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-		//if (settings.getInt("mode", MODE_IP) == MODE_IP) {
+		if (settings.getInt("mode", MODE_IP) == MODE_IP) {
 			Log.i(LOG_TAG, "INF: lowerSendIP");
 			try {
 				InetAddress ipAddress = InetAddress.getByName(coap.get_addr(dst));
@@ -755,10 +789,10 @@ public class CoAPServer extends Activity {
 				Log.w(LOG_TAG, "WARN: No network connectivity...\n");
 				//e.printStackTrace();
 			}
-		/*} else {
+		} else {
 			Log.i(LOG_TAG, "INF: lowerSendSMS");
-			lowerSendSMS(coap.get_bytes(pdu), noText.getText().toString());
-		}*/
+			lowerSendSMS(coap.get_bytes(pdu), tempFromPhoneNumber);
+		}
 
 		Log.i(LOG_TAG, "INF: callback coap_send_impl return.");
 		return;
@@ -774,11 +808,11 @@ public class CoAPServer extends Activity {
 
 	public void lowerSendSMS(byte[] sendData, String phoneNo) {
         PendingIntent pi = PendingIntent.getActivity(this, 0,
-                new Intent(this, CoAPClient.class), 0);
+                new Intent(this, CoAPServer.class), 0);
 
     	SmsManager sms = SmsManager.getDefault();
-    	
-    	//Log.i(LOG_TAG, "[SMSApp] byte[]: "+message + "/" + message.length);
+    	Log.i(LOG_TAG, "[SMS] to: " + phoneNo);
+    	Log.i(LOG_TAG, "[SMS] byte[]: "+sendData + "/" + sendData.length);
     	//String str = new String(message, "utf-8");
 
     	String str = Base64.encodeToString(sendData, Base64.DEFAULT);
@@ -789,6 +823,7 @@ public class CoAPServer extends Activity {
     	Log.i(LOG_TAG, "[SMS] text sms sent");
 	}
 
+	/*
 	public class SmsReceiver extends BroadcastReceiver {
 
 		@Override
@@ -822,6 +857,7 @@ public class CoAPServer extends Activity {
 		            Log.i(LOG_TAG, "[SMS] base64[] " + b);
 					
 		            //TODO: act only on white-listed telephone numbers !!!
+		            
 		            // faking an IPv6 address to make libcoap happily match request and response
 		            SWIGTYPE_p_sockaddr_in6 src;
 		            
@@ -838,10 +874,6 @@ public class CoAPServer extends Activity {
 					coap.coap_read(ctx, src, b, b.length);
 					coap.coap_dispatch(ctx);
 		            
-					/*Log.i(LOG_TAG,
-							"[SMSApp] Coap Message reconstruction successful: " + msg.toString());
-					Toast.makeText(context, "CoAP: " + msg.toString(),
-							Toast.LENGTH_SHORT).show();*/
 				} catch (Exception e) {
 					Log.e(LOG_TAG, "[SMSApp] exception", e);
 				}
@@ -851,9 +883,8 @@ public class CoAPServer extends Activity {
 				// sendSMS(msgs[0].getOriginatingAddress(), "Selber hallo.");
 			}
 		}
-	
 	}
-
+*/
 	//message handler to update UI thread for received messages
 	/*
 	private Handler messageUIHandlerReceived = new Handler() {
@@ -1115,9 +1146,12 @@ public class CoAPServer extends Activity {
 			coap_listnode node,
 			String data) {
 
-		Log.i(LOG_TAG, "INF: Java Client messageHandler()");
+		Log.i(LOG_TAG, "INF: Java Server messageHandler()");
 
-		lr.requestStop();
+		try {
+			lr.requestStop();
+		} catch (NullPointerException e) {
+		}
 
 		//		System.out.println(LI+"INF: ****** pdu (" + node.getPdu().getLength()
 		//				+ " bytes)" + " v:" + node.getPdu().getHdr().getVersion()
@@ -1245,4 +1279,24 @@ public class CoAPServer extends Activity {
 	  coap.coap_add_data(pdu, len, data);
 	}
 
+	public void smsReceived(byte[] b, String fromPhoneNumber) {
+		// faking an IPv6 address to make libcoap happily match request and response
+		SWIGTYPE_p_sockaddr_in6 src;
+
+		int port = 0;
+		try {
+			port = new Integer(portText.getText().toString()).intValue();
+		} catch (NumberFormatException e) {
+			port = coapConstants.COAP_DEFAULT_PORT;
+		}
+		src = coap.sockaddr_in6_create(coapConstants.AF_INET6,
+				port,
+				ipText.getText().toString());
+
+		tempFromPhoneNumber = fromPhoneNumber;
+		
+		Log.i(LOG_TAG, "INF: smsReceived " + ctx + " " + src + " " + b + " " + b.length);
+		coap.coap_read(ctx, src, b, b.length);
+		coap.coap_dispatch(ctx);
+	}
 }
