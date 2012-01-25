@@ -385,7 +385,7 @@ coap_retransmit( coap_context_t *context, coap_queue_t *node ) {
   /* re-initialize timeout when maximum number of retransmissions are not reached yet */
   if ( node->retransmit_cnt < COAP_DEFAULT_MAX_RETRANSMIT ) {
     node->retransmit_cnt++;
-    node->t += ( 1 << node->retransmit_cnt );
+    node->t += ( COAP_DEFAULT_RESPONSE_TIMEOUT << node->retransmit_cnt );
     coap_insert_node( &context->sendqueue, node, _order_timestamp );
 
     debug("** retransmission #%d of transaction %d\n",
