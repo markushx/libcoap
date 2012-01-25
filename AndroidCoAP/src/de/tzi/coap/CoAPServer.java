@@ -4,17 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.*;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.Set;
 import java.util.Vector;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -28,7 +20,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.view.LayoutInflater;
@@ -36,18 +27,12 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.webkit.WebView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -55,11 +40,9 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
-import android.text.format.DateFormat;
 import android.util.Base64;
 import android.util.Log;
 
-import de.tzi.coap.jni.SWIGTYPE_p_f_p_coap_uri_t_p_unsigned_char_unsigned_int_p_unsigned_char_p_unsigned_int_p_int__int;
 import de.tzi.coap.jni.coap;
 import de.tzi.coap.jni.coapConstants;
 import de.tzi.coap.jni.coap_context_t;
@@ -68,7 +51,6 @@ import de.tzi.coap.jni.coap_listnode;
 import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
 import de.tzi.coap.jni.coap_resource_t;
 import de.tzi.coap.jni.coap_uri_t;
-import de.tzi.coap.jni.str;
 
 /**
  * Sample implementation of a CoAP server for Android using SWIGified libcoap.
