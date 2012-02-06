@@ -272,21 +272,36 @@ signed
   /* register message handler */
   void register_message_handler(coap_context_t *ctx, jobject client_server) {
     //printf ("INF: register_message_handler(%p, %p)\n", ctx, client_server);
-    cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
-    coap_register_message_handler(ctx, message_handler_proxy);
+
+    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
+      coap_register_message_handler(ctx, message_handler_proxy);
+    } else {
+      //TODO: handle error
+    }
     //printf ("INF: ~register_message_handler()\n");
     //fflush(stdout);
   }
 
   void deregister_message_handler(coap_context_t *ctx, jobject client_server) {
-    //printf ("INF: register_message_handler(%p, %p)\n", ctx, client_server);
-    (*jenv)->DeleteGlobalRef(jenv, client_server);
-    //printf ("INF: ~register_message_handler()\n");
+    //printf ("INF: deregister_message_handler(%p, %p)\n", ctx, client_server);
+    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      (*jenv)->DeleteGlobalRef(jenv, client_server);
+    } else {
+      //TODO: handle error
+    }
+    //printf ("INF: ~deregister_message_handler()\n");
     //fflush(stdout);
   }
 
   JNIEXPORT void JNICALL coap_send_impl(coap_context_t *ctx,
-					const struct sockaddr_in6 *dst, 
+					const struct sockaddr_in6 *dst,
 					coap_pdu_t *pdu,
 					int free_pdu) {
 
@@ -433,7 +448,7 @@ signed
       coap_delete_node( node );
       return;
     }
-    
+
     if ( (unsigned char *)node->pdu->hdr + node->pdu->length < (unsigned char *)opt )
       node->pdu->data = (unsigned char *)node->pdu->hdr + node->pdu->length;
     else
