@@ -361,7 +361,8 @@ coap_send_confirmed( coap_context_t *context, const struct sockaddr_in6 *dst, co
 
   node = coap_new_node();
   time(&node->t);
-  node->t += 1;		      /* 1 == 1 << 0 == 1 << retransmit_cnt */
+  //node->t += 1;		      /* 1 == 1 << 0 == 1 << retransmit_cnt */
+  node->t += COAP_DEFAULT_RESPONSE_TIMEOUT;
 
   memcpy( &node->remote, dst, sizeof( struct sockaddr_in6 ) );
   node->pdu = pdu;
@@ -406,7 +407,7 @@ coap_retransmit( coap_context_t *context, coap_queue_t *node ) {
 int
 order_transaction_id( coap_queue_t *lhs, coap_queue_t *rhs ) {
   return ( lhs && rhs && lhs->pdu && rhs->pdu &&
-	   ( lhs->pdu->hdr->id < lhs->pdu->hdr->id ) ) 
+	   ( lhs->pdu->hdr->id < rhs->pdu->hdr->id ) ) 
     ? -1 
     : 1;
 }  
@@ -513,7 +514,7 @@ coap_remove_transaction( coap_queue_t **queue, coap_tid_t id ) {
   do {
     p = q;
     q = q->next;
-  } while ( q && id == q->pdu->hdr->id );
+  } while ( q && id != q->pdu->hdr->id );
   
   if ( q ) {			/* found transaction */
     p->next = q->next;
