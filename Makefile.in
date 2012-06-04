@@ -25,7 +25,8 @@ OBJECTS:= $(patsubst %.c, %.o, $(SOURCES))
 HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h coap_list.h mem.h \
 	str.h option.h bits.h uthash.h utlist.h resource.h hashkey.h async.h \
 	subscribe.h block.h address.h prng.h coap_time.h
-CFLAGS:=-Wall -Wextra -std=c99 -pedantic @CFLAGS@
+#CFLAGS:=-Wall -Wextra -std=c99 -pedantic @CFLAGS@
+CFLAGS:=-g @CFLAGS@
 CPPFLAGS:=@CPPFLAGS@
 DISTDIR=$(top_builddir)/$(package)
 SUBDIRS:=examples doc
@@ -36,6 +37,28 @@ ARFLAGS:=cru
 examples:=examples
 doc:=doc
 
+# SWIG:
+SWIGOPT    = -I$(ANDROID_NDK_DIR)/platforms/android-3/arch-arm/usr/include -I$(ANDROID_NDK_DIR)/platforms/android-3/arch-arm/usr/include/linux
+SWIG       = swig2.0
+
+TARGET        = coap
+SRCS          = $(SOURCES)
+INCLUDES      = -I.
+INTERFACE     = coap.i
+INTERFACEDIR  = swig/
+INTERFACEPATH = $(INTERFACEDIR)$(INTERFACE)
+
+#LIBM       = @LIBM@
+#LIBC       = @LIBC@
+#LIBCRYPT   = @LIBCRYPT@
+#SYSLIBS    = $(LIBM) $(LIBC) $(LIBCRYPT)
+#LIBPREFIX  =
+
+IWRAP      = $(INTERFACE:.i=_wrap.i)
+ISRCS      = $(IWRAP:.i=.c)
+ICXXSRCS   = $(IWRAP:.i=.cxx)
+IOBJS      = $(IWRAP:.i=.@OBJEXT@)
+#~SWIG
 
 .PHONY: all dirs clean distclean .gitignore doc TAGS
 
@@ -59,7 +82,7 @@ $(LIB):	$(OBJECTS)
 	ranlib $@
 
 clean:
-	@rm -f $(PROGRAM) main.o $(LIB) $(OBJECTS)
+	@rm -f $(PROGRAM) main.o $(LIB) $(OBJECTS) $(WRAPPER) $(WRAPPER_OBJECTS)
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean ; \
 	done
@@ -86,3 +109,58 @@ TAGS:
 
 .gitignore:
 	echo "core\n*~\n*.[oa]\n*.gz\n*.cap\n$(PROGRAM)\n$(DISTDIR)\n.gitignore" >$@
+
+##################################################################
+#####                       JAVA                            ######
+##################################################################
+
+JAVA_HOME:=$(shell readlink -f /usr/bin/javac | sed "s:/bin/javac::")
+
+# You need to set this variable to the java directories containing the
+# files "jni.h" and "md.h"
+# usually something like /usr/java/include and /usr/java/include/<arch-osname>.
+JAVA_INCLUDE = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+
+# Extra Java specific dynamic linking options
+JAVA_LIBPREFIX = lib
+JAVASO = .so
+JAVA_DLNK  = -static-libgcc -shared -Wl,-soname,$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+JAVALDSHARED = $(CC)
+JAVACXXSHARED = $(CC)
+JAVACFLAGS = -fPIC -D__ARM_EABI__=1
+
+# ----------------------------------------------------------------
+# Build a java dynamically loadable module (C)
+# ----------------------------------------------------------------
+
+java: $(SRCS)
+	echo "$(SRCS)"
+	mkdir -p swig/java/de/tzi/coap/jni/
+	$(SWIG) -java -includeall -ignoremissing -DJAVA $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ISRCS) $(INTERFACEPATH)
+	$(CC) -c $(CCSHARED) $(CFLAGS) -DJAVA $(JAVACFLAGS) $(SRCS) swig/java/$(ISRCS) $(INCLUDES) $(JAVA_INCLUDE)
+	$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+	@JAVAC@ -sourcepath ./swig/java/ -d ./swig/java swig/java/de/tzi/coap/jni/*.java;
+	cd swig/java/; jar cvf jnicoap.jar de/tzi/coap/jni/*.class; cd ../../
+
+# ----------------------------------------------------------------
+# Build a java dynamically loadable module (C++)
+# ----------------------------------------------------------------
+
+java_cpp: $(SRCS)
+	#$(SWIG) -java -c++ -includeall -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ICXXSRCS) $(INTERFACEPATH)
+	$(SWIG) -java -c++ -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ICXXSRCS) $(INTERFACEPATH)
+	#$(SWIG) -java -c++ $(SWIGOPT) $(INTERFACEPATH)
+	$(CC) -c $(CCSHARED) $(CFLAGS) $(JAVACFLAGS) $(SRCS) $(CXXSRCS) swig/java/$(ICXXSRCS) $(INCLUDES) $(JAVA_INCLUDE)
+	#$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+	$(JAVACXXSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) $(CPP_DLLIBS) -o $(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+
+# -----------------------------------------------------------------
+# Cleaning the java examples
+# -----------------------------------------------------------------
+
+java_clean:
+	rm -f *~ .~* *.class `find ./swig/java -name \*.java | grep -v runme.java`
+	rm -f swig/*_wrap*
+	rm -rf swig/java/*
+	rm -f core @EXTRA_CLEAN@
+	rm -f *.@OBJEXT@ *@JAVASO@

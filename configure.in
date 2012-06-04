@@ -60,6 +60,22 @@ AC_ARG_WITH(query-filter,
   [CPPFLAGS="${CPPFLAGS} -DWITHOUT_QUERY_FILTER"], 
   [])
 
+AC_ARG_WITH(swig,
+  [AS_HELP_STRING([--with-swig],[enable support for SWIG wrapping libcoap])],
+  [], 
+  [with-swig=no])
+
+AS_IF([test "x$with_swig" != xno],
+            [
+			# Checks for SWIG/Java/JNI.
+			AC_CONFIG_MACRO_DIR([./m4macros])
+
+			AC_PROG_JAVA
+			AC_PROG_JAVAC
+			AC_JNI_INCLUDE_DIR
+			AC_CHECK_JAVA_HOME
+	])
+
 # Checks for header files.
 AC_CHECK_HEADERS([assert.h arpa/inet.h limits.h netdb.h netinet/in.h stdlib.h string.h strings.h sys/socket.h sys/time.h time.h unistd.h sys/unistd.h])
 

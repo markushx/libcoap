@@ -129,6 +129,10 @@ print_readable( const unsigned char *data, unsigned int len,
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
+#ifdef JAVA
+typedef uint16_t in_port_t;
+#endif
+
 size_t
 coap_print_addr(const struct __coap_address_t *addr, unsigned char *buf, size_t len) {
 #ifdef HAVE_ARPA_INET_H

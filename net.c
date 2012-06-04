@@ -405,6 +405,7 @@ coap_send_ack(coap_context_t *context,
 }
 
 #ifndef WITH_CONTIKI
+#ifndef JAVA
 /* releases space allocated by PDU if free_pdu is set */
 coap_tid_t
 coap_send_impl(coap_context_t *context, 
@@ -427,6 +428,7 @@ coap_send_impl(coap_context_t *context,
 
   return id;
 }
+#endif
 #else  /* WITH_CONTIKI */
 /* releases space allocated by PDU if free_pdu is set */
 coap_tid_t
@@ -610,7 +612,7 @@ _order_transaction_id( coap_queue_t *lhs, coap_queue_t *rhs ) {
     : 1;
 }
 
-/** 
+/**
  * Checks if @p opt fits into the message that ends with @p maxpos.
  * This function returns @c 1 on success, or @c 0 if the option @p opt
  * would exceed @p maxpos.
@@ -624,6 +626,7 @@ check_opt_size(coap_opt_t *opt, unsigned char *maxpos) {
   return 0;
 }
 
+#ifndef JAVA
 int
 coap_read( coap_context_t *ctx ) {
 #ifndef WITH_CONTIKI
@@ -756,6 +759,7 @@ coap_read( coap_context_t *ctx ) {
   coap_delete_node(node);
   return -1;
 }
+#endif
 
 int
 coap_remove_from_queue(coap_queue_t **queue, coap_tid_t id, coap_queue_t **node) {

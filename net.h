@@ -20,7 +20,9 @@
 #endif
 #endif
 
+#ifndef SWIG
 #include <stdlib.h>
+#endif
 #include <string.h>
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -308,7 +310,9 @@ coap_tid_t coap_retransmit( coap_context_t *context, coap_queue_t *node );
  * and a new node with the parsed PDU is added to the receive queue in the specified context
  * object.
  */
+#ifndef JAVA
 int coap_read( coap_context_t *context );
+#endif
 
 /** 
  * Calculates a unique transaction id from given arguments @p peer and
@@ -417,5 +421,7 @@ void coap_ticks(coap_tick_t *);
 int coap_option_check_critical(coap_context_t *ctx, 
 			       coap_pdu_t *pdu,
 			       coap_opt_filter_t unknown);
+
+int _order_timestamp( coap_queue_t *lhs, coap_queue_t *rhs );
 
 #endif /* _COAP_NET_H_ */
