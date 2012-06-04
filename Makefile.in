@@ -164,3 +164,11 @@ java_clean:
 	rm -rf swig/java/*
 	rm -f core @EXTRA_CLEAN@
 	rm -f *.@OBJEXT@ *@JAVASO@
+
+javaclient:	java
+	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/CoapBase.java
+	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/Client.java
+
+javaserver:	java
+	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/CoapBase.java
+	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/Server.java
