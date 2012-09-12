@@ -41,7 +41,12 @@ doc:=doc
 LN:=ln
 
 # SWIG:
-SWIGOPT    = -I$(ANDROID_NDK_DIR)/platforms/android-3/arch-arm/usr/include -I$(ANDROID_NDK_DIR)/platforms/android-3/arch-arm/usr/include/linux
+# Android
+#SWIGOPT    = -I$(ANDROID_NDK_DIR)/platforms/android-3/arch-arm/usr/include -I$(ANDROID_NDK_DIR)/platforms/android-3/arch-arm/usr/include/linux
+# POSIX
+#SWIGOPT    = -I/usr/include -I/usr/include/linux
+SWIGOPT    =
+
 SWIG       = swig2.0
 
 TARGET        = coap

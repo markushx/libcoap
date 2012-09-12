@@ -12,7 +12,9 @@
 #include "config.h"
 
 #ifdef HAVE_ASSERT_H
+#ifndef SWIG
 #include <assert.h>
+#endif
 #else
 #ifndef assert
 #warning "assertions are disabled"
@@ -20,9 +22,7 @@
 #endif
 #endif
 
-#ifndef SWIG
 #include <stdlib.h>
-#endif
 #include <string.h>
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>

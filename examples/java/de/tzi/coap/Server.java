@@ -37,6 +37,8 @@ public class Server extends CoapBase {
     public void run() {
 	boolean quit = false;
 
+	System.out.println("INF: run()");
+
 	coap.coap_set_log_level(coap_log_t.LOG_DEBUG);
 
 	// create coap_context

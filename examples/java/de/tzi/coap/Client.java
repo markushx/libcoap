@@ -10,27 +10,37 @@ package de.tzi.coap;
 import de.tzi.coap.jni.coap;
 import de.tzi.coap.jni.coapConstants;
 import de.tzi.coap.jni.coapJNI;
-import de.tzi.coap.jni.sockaddr_in6;
+//import de.tzi.coap.jni.sockaddr_in6;
+//import de.tzi.coap.jni.sockaddr_in6;
+//import de.tzi.coap.jni.in6_addr;
+//import de.tzi.coap.jni.in6_addr___in6_u;
 import de.tzi.coap.jni.coap_context_t;
 import de.tzi.coap.jni.coap_pdu_t;
 import de.tzi.coap.jni.coap_hdr_t;
-import de.tzi.coap.jni.coap_listnode;
-import de.tzi.coap.jni.in6_addr;
-import de.tzi.coap.jni.in6_addr___in6_u;
-import de.tzi.coap.jni.sockaddr_in6;
-import de.tzi.coap.jni.addrinfo;
+import de.tzi.coap.jni.coap_queue_t;
+//import de.tzi.coap.jni.addrinfo;
+import de.tzi.coap.jni.coap_log_t;
+//import de.tzi.coap.jni.coap_tid_t;
+import de.tzi.coap.jni.__coap_address_t;
+import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
+
 import java.util.Random;
 import java.util.Vector;
 
 
 public class Client extends CoapBase {
 
+    int mainLoopSleepTimeMilli = 50;
+
+    coap_context_t ctx;
+    coap_queue_t nextpdu;
+
     static Random generator = new Random();
 
     public Client() {
     }
 
-    coap_pdu_t new_ack( coap_context_t  ctx, coap_listnode node ) {
+    coap_pdu_t new_ack( coap_context_t ctx, coap_queue_t node ) {
 	coap_pdu_t pdu = coap.coap_new_pdu();
 
 	if (pdu != null) {
@@ -42,7 +52,7 @@ public class Client extends CoapBase {
 	return pdu;
     }
 
-    coap_pdu_t new_response( coap_context_t  ctx, coap_listnode node, int code ) {
+    coap_pdu_t new_response( coap_context_t ctx, coap_queue_t node, int code ) {
 	coap_pdu_t pdu = new_ack(ctx, node);
 
 	if (pdu != null)
@@ -79,19 +89,23 @@ public class Client extends CoapBase {
 
 
     public void run(String destination, int port, int method, Vector<CoapJavaOption> optlist, String payload) {
+	boolean quit = false;
+
 	System.out.println("INF: run()");
 
+	coap.coap_set_log_level(coap_log_t.LOG_DEBUG);
+
 	// create coap_context
-	System.out.println("INF: create context");
-	coap_context_t ctx = coap.coap_new_context(77777);
+	System.err.println("INF: create context");
+	ctx = coap.get_context("::", ""+0/*coapConstants.COAP_DEFAULT_PORT*/);
 	if (ctx == null) {
-	    System.err.println("Could not create context");
+	    System.out.println("Could not create context");
 	    return;
 	}
 
 	// register ourselves for message handling
 	System.out.println("INF: register message handler");
-	coap.register_message_handler(ctx, this);
+	coap.register_response_handler(ctx, this);
 
 	coap_pdu_t pdu = coap_new_request(method,
 					  optlist,
@@ -103,10 +117,28 @@ public class Client extends CoapBase {
 	}
 
 	// set destination
-	sockaddr_in6 dst;
-	dst = coap.sockaddr_in6_create(coapConstants.AF_INET6,
-				       port,
-				       destination);
+	__coap_address_t dst = new __coap_address_t();
+
+	int res = coap.resolve_address(coap.create_str(destination,
+						       destination.length()),
+				       dst.getAddr().getSa());
+	// int res = coap.resolve_address(coap.create_str(destination,
+	// 					       0),
+	// 			       dst.getAddr().getSa());
+	if (res < 0) {
+	    System.err.println("Could not resolve address.");
+	    return;
+	}
+	dst.setSize(res);
+	//dst.getAddr().getSin().setSin_port(coap.htons(port));
+	//dst.getAddr().getSin().setSin_port(port); //FIXME: add htons() for port
+
+	SWIGTYPE_p_sockaddr_in6 dstsin6;
+	dstsin6 = coap.sockaddr_in6_create(coapConstants.AF_INET6,
+					   port,
+					   destination);
+
+	dst.getAddr().setSin6(dstsin6);
 
 	// TODO: JAVAfy sockaddr_in6 creation?
 	// sockaddr_in6 is already wrapped
@@ -126,57 +158,93 @@ public class Client extends CoapBase {
 	coap.coap_send_confirmed(ctx, dst, pdu);
 	// handle retransmission, receive and dispatch
 	// -> will trigger messageHandler() callback
-	coap.check_receive_client(ctx);
+	// coap.check_receive_client(ctx); //TODO: reenable
+
+	while (!quit) {
+	    //System.out.print(".");
+
+	    checkReceiveTraffic();
+	    checkRetransmit();
+
+	    try {
+		Thread.sleep(mainLoopSleepTimeMilli);
+	    } catch (InterruptedException e) {
+		e.printStackTrace();
+	    }
+	}
 
 	// free data
-	coap.sockaddr_in6_free(dst);
+	//coap.sockaddr_in6_free(dst);
 	coap.coap_free_context(ctx);
 
 	System.out.println("INF: ~run()");
     }
 
-    public void messageHandler(coap_context_t ctx,
-			       coap_listnode node,
-			       String data) {
+    private void checkRetransmit() {
+	//System.out.print("r");
+	nextpdu = coap.coap_peek_next(ctx);
+
+	if (nextpdu != null) {
+	    //System.out.println("R cond " + nextpdu.getT() + "," + System.currentTimeMillis()/1000 );
+	    if (nextpdu.getT() <= System.currentTimeMillis()/1000) {
+		System.out.println("INF: CoAP retransmission");
+		coap.coap_retransmit( ctx, coap.coap_pop_next( ctx ) );
+	    }
+	}
+    }
+
+    private void checkReceiveTraffic() {
+	coap.coap_read(ctx);
+	coap.coap_dispatch(ctx);
+    }
+
+    public void responseHandler(coap_context_t ctx,
+				__coap_address_t remote,
+				coap_pdu_t sent,
+				coap_pdu_t received,
+				int id) {
+
 	coap_pdu_t pdu = null;
-	System.out.println("INF: Java Client messageHandler()");
+	System.out.println("INF: Java Client responseHandler()");
 
-	System.out.println("****** pdu (" + node.getPdu().getLength() +  " bytes)"
-			   + " v:"  + node.getPdu().getHdr().getVersion()
-			   + " t:"  + node.getPdu().getHdr().getType()
-			   + " oc:" + node.getPdu().getHdr().getOptcnt()
-			   + " c:"  + node.getPdu().getHdr().getCode()
-			   + " id:" + node.getPdu().getHdr().getId());
+	System.out.println("****** pdu (" + received.getLength() +  " bytes)"
+			   + " v:"  + received.getHdr().getVersion()
+			   + " t:"  + received.getHdr().getType()
+			   + " oc:" + received.getHdr().getOptcnt()
+			   + " c:"  + received.getHdr().getCode()
+			   + " id:" + received.getHdr().getId());
 
+	/*
 	System.out.println("from:" + coap.get_addr(node.getRemote()));
+	*/
 
-	if ( node.getPdu().getHdr().getVersion() != coapConstants.COAP_DEFAULT_VERSION ) {
-	    System.out.printf("dropped packet with unknown version %u\n", node.getPdu().getHdr().getVersion());
-	    return;
-	}
+	// if ( node.getPdu().getHdr().getVersion() != coapConstants.COAP_DEFAULT_VERSION ) {
+	//     System.out.printf("dropped packet with unknown version %u\n", node.getPdu().getHdr().getVersion());
+	//     return;
+	// }
 
-	/* send 500 response */
-	if ( node.getPdu().getHdr().getCode() < coapConstants.COAP_RESPONSE_100 && node.getPdu().getHdr().getType() == coapConstants.COAP_MESSAGE_CON ) {
-	    pdu = new_response( ctx, node, coapConstants.COAP_RESPONSE_500 );
-	    finish(ctx, node, pdu);
-	    return;
-	}
+	// /* send 500 response */
+	// if ( node.getPdu().getHdr().getCode() < coapConstants.COAP_RESPONSE_100 && node.getPdu().getHdr().getType() == coapConstants.COAP_MESSAGE_CON ) {
+	//     pdu = new_response( ctx, node, coapConstants.COAP_RESPONSE_500 );
+	//     finish(ctx, node, pdu);
+	//     return;
+	// }
 
-	if (node.getPdu().getHdr().getCode() == coapConstants.COAP_RESPONSE_200) {
-	    String pdudata = node.getPdu().getData();
-	    System.out.println("****** data:'" + pdudata + "'");
-	}
+	// if (node.getPdu().getHdr().getCode() == coapConstants.COAP_RESPONSE_200) {
+	//     String pdudata = node.getPdu().getData();
+	//     System.out.println("****** data:'" + pdudata + "'");
+	// }
 
-	/* acknowledge if requested */
-	if ( pdu != null && node.getPdu().getHdr().getType() == coapConstants.COAP_MESSAGE_CON ) {
-	    pdu = new_ack( ctx, node );
-	}
+	// /* acknowledge if requested */
+	// if ( pdu != null && node.getPdu().getHdr().getType() == coapConstants.COAP_MESSAGE_CON ) {
+	//     pdu = new_ack( ctx, node );
+	// }
 
-	finish(ctx, node, pdu);
+	//finish(ctx, node, pdu);
 	System.out.println("INF: ~Java messageHandler()");
     }
 
-    public void finish(coap_context_t ctx, coap_listnode node, coap_pdu_t pdu){
+    public void finish(coap_context_t ctx, coap_queue_t node, coap_pdu_t pdu){
 	if ( (pdu != null) && (coap.coap_send( ctx, node.getRemote(), pdu ) == coapConstants.COAP_INVALID_TID )) {
 	    System.out.println("message_handler: error sending reponse");
 	    coap.coap_delete_pdu(pdu);
@@ -191,7 +259,8 @@ public class Client extends CoapBase {
 	int port = coapConstants.COAP_DEFAULT_PORT;
 	int method = coapConstants.COAP_REQUEST_GET;
 	int content_type = coapConstants.COAP_MEDIATYPE_APPLICATION_OCTET_STREAM;
-	String uri = ".well-known/core";
+	String uri = "";
+	//String uri = ".well-known/core";
 	String token = "3a";
 	String payload = "Hello CoAP";
 
