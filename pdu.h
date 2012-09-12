@@ -113,12 +113,20 @@ char *coap_response_phrase(unsigned char code);
 #endif /* SHORT_ERROR_RESPONSE */
 
 /* The following definitions exist for backwards compatibility */
+/* The macro COAP_RESPONSE_CODE is not available in SWIG. */
 #if 0 /* this does not exist any more */
 #define COAP_RESPONSE_100      40 /* 100 Continue */
 #endif
 #define COAP_RESPONSE_200      COAP_RESPONSE_CODE(200)  /* 2.00 OK */
 #define COAP_RESPONSE_201      COAP_RESPONSE_CODE(201)  /* 2.01 Created */
+#ifdef JAVA
+#define COAP_RESPONSE_202      COAP_RESPONSE_CODE(202)
+#endif
 #define COAP_RESPONSE_304      COAP_RESPONSE_CODE(203)  /* 2.03 Valid */
+#ifdef JAVA
+#define COAP_RESPONSE_204      COAP_RESPONSE_CODE(204)
+#define COAP_RESPONSE_205      COAP_RESPONSE_CODE(205)
+#endif
 #define COAP_RESPONSE_400      COAP_RESPONSE_CODE(400)  /* 4.00 Bad Request */
 #define COAP_RESPONSE_404      COAP_RESPONSE_CODE(404)  /* 4.04 Not Found */
 #define COAP_RESPONSE_405      COAP_RESPONSE_CODE(405)  /* 4.05 Method Not Allowed */

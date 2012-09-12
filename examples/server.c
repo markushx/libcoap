@@ -60,7 +60,7 @@ hnd_get_index(coap_context_t  *ctx, struct coap_resource_t *resource,
 	      coap_pdu_t *response) {
   unsigned char buf[3];
 
-  response->hdr->code = COAP_RESPONSE_CODE(205);
+  response->hdr->code = coapConstants.COAP_RESPONSE_CODE(205);
 
   coap_add_option(response, COAP_OPTION_CONTENT_TYPE,
 	  coap_encode_var_bytes(buf, COAP_MEDIATYPE_TEXT_PLAIN), buf);

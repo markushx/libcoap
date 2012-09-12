@@ -18,8 +18,7 @@
 
 #include "option.h"
 
-
-const coap_opt_filter_t COAP_OPT_ALL = 
+const coap_opt_filter_t COAP_OPT_ALL =
   { 0xff, 0xff, 0xff };	       /* must be sizeof(coap_opt_filter_t) */
 
 coap_opt_iterator_t *

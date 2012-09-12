@@ -112,6 +112,8 @@ print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen,
 #endif /* WITH_CONTIKI */
 
 #ifndef WITHOUT_QUERY_FILTER
+  str *rt_attributes;
+
   /* split query filter, if any */
   if (query_filter) {
     resource_param.s = COAP_OPT_VALUE(query_filter);
@@ -124,7 +126,7 @@ print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen,
 	  memcmp(resource_param.s, "href", 4) == 0)
 	flags |= MATCH_URI;
 
-      for (str *rt_attributes = _rt_attributes; rt_attributes->s; rt_attributes++) {
+      for (rt_attributes = _rt_attributes; rt_attributes->s; rt_attributes++) {
         if (resource_param.length == rt_attributes->length && 
             memcmp(resource_param.s, rt_attributes->s, rt_attributes->length) == 0) {
           flags |= MATCH_SUBSTRING;
@@ -219,7 +221,9 @@ coap_resource_init(const unsigned char *uri, size_t len, int flags) {
     LIST_STRUCT_INIT(r, subscribers);
 #endif /* WITH_CONTIKI */
 
-    r->uri.s = (unsigned char *)uri;
+    r->uri.s = coap_malloc(len);
+    memcpy(r->uri.s, uri, len);
+    //r->uri.s = (unsigned char *)uri;
     r->uri.length = len;
     
     coap_hash_path(r->uri.s, r->uri.length, r->key);

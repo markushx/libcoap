@@ -310,9 +310,9 @@ coap_tid_t coap_retransmit( coap_context_t *context, coap_queue_t *node );
  * and a new node with the parsed PDU is added to the receive queue in the specified context
  * object.
  */
-#ifndef JAVA
+//#ifndef JAVA
 int coap_read( coap_context_t *context );
-#endif
+//#endif
 
 /** 
  * Calculates a unique transaction id from given arguments @p peer and
@@ -423,5 +423,9 @@ int coap_option_check_critical(coap_context_t *ctx,
 			       coap_opt_filter_t unknown);
 
 int _order_timestamp( coap_queue_t *lhs, coap_queue_t *rhs );
+
+#ifndef WITH_CONTIKI
+time_t clock_offset;
+#endif
 
 #endif /* _COAP_NET_H_ */

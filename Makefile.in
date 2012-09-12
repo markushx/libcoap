@@ -26,23 +26,26 @@ HEADERS:=coap.h config.h debug.h pdu.h net.h encode.h uri.h coap_list.h mem.h \
 	str.h option.h bits.h uthash.h utlist.h resource.h hashkey.h async.h \
 	subscribe.h block.h address.h prng.h coap_time.h
 #CFLAGS:=-Wall -Wextra -std=c99 -pedantic @CFLAGS@
+#CFLAGS:=-g -std=c99 @CFLAGS@
 CFLAGS:=-g @CFLAGS@
 CPPFLAGS:=@CPPFLAGS@
 DISTDIR=$(top_builddir)/$(package)
 SUBDIRS:=examples doc
 FILES:=Makefile.in configure configure.in config.h.in $(SOURCES) $(HEADERS)
 LIB:=libcoap.a
+LIBSO:=libcoap.so
 LDFLAGS:=@LIBS@
 ARFLAGS:=cru
 examples:=examples
 doc:=doc
+LN:=ln
 
 # SWIG:
 SWIGOPT    = -I$(ANDROID_NDK_DIR)/platforms/android-3/arch-arm/usr/include -I$(ANDROID_NDK_DIR)/platforms/android-3/arch-arm/usr/include/linux
 SWIG       = swig2.0
 
 TARGET        = coap
-SRCS          = $(SOURCES)
+#SRCS          = $(SOURCES)
 INCLUDES      = -I.
 INTERFACE     = coap.i
 INTERFACEDIR  = swig/
@@ -65,9 +68,9 @@ IOBJS      = $(IWRAP:.i=.@OBJEXT@)
 .SUFFIXES:
 .SUFFIXES:      .c .o
 
-all:	$(LIB) dirs
+all:	$(LIB) $(LIBSO) dirs
 
-check:	
+check:
 	echo DISTDIR: $(DISTDIR)
 	echo top_builddir: $(top_builddir)
 	$(MAKE) -C examples check
@@ -81,8 +84,11 @@ $(LIB):	$(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $^ 
 	ranlib $@
 
+$(LIBSO):	$(OBJECTS)
+	$(CC) -shared -Wl,-soname,$(LIBSO).0 -o $(LIBSO).@PACKAGE_VERSION@ $(OBJECTS)
+
 clean:
-	@rm -f $(PROGRAM) main.o $(LIB) $(OBJECTS) $(WRAPPER) $(WRAPPER_OBJECTS)
+	@rm -f $(PROGRAM) main.o $(LIB) $(LIBSO) $(OBJECTS) $(WRAPPER) $(WRAPPER_OBJECTS)
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean ; \
 	done
@@ -133,12 +139,12 @@ JAVACFLAGS = -fPIC -D__ARM_EABI__=1
 # Build a java dynamically loadable module (C)
 # ----------------------------------------------------------------
 
-java: $(SRCS)
-	echo "$(SRCS)"
+java: $(SOURCES) #$(SRCS)
+	echo "$(SOURCES)"
 	mkdir -p swig/java/de/tzi/coap/jni/
 	$(SWIG) -java -includeall -ignoremissing -DJAVA $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ISRCS) $(INTERFACEPATH)
-	$(CC) -c $(CCSHARED) $(CFLAGS) -DJAVA $(JAVACFLAGS) $(SRCS) swig/java/$(ISRCS) $(INCLUDES) $(JAVA_INCLUDE)
-	$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+	$(CC) -c $(CCSHARED) $(CFLAGS) -DJAVA $(JAVACFLAGS) $(SOURCES) swig/java/$(ISRCS) $(INCLUDES) $(JAVA_INCLUDE)
+	$(JAVALDSHARED) $(CFLAGS) $(OBJECTS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
 	@JAVAC@ -sourcepath ./swig/java/ -d ./swig/java swig/java/de/tzi/coap/jni/*.java;
 	cd swig/java/; jar cvf jnicoap.jar de/tzi/coap/jni/*.class; cd ../../
 
@@ -146,13 +152,13 @@ java: $(SRCS)
 # Build a java dynamically loadable module (C++)
 # ----------------------------------------------------------------
 
-java_cpp: $(SRCS)
-	#$(SWIG) -java -c++ -includeall -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ICXXSRCS) $(INTERFACEPATH)
-	$(SWIG) -java -c++ -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ICXXSRCS) $(INTERFACEPATH)
-	#$(SWIG) -java -c++ $(SWIGOPT) $(INTERFACEPATH)
-	$(CC) -c $(CCSHARED) $(CFLAGS) $(JAVACFLAGS) $(SRCS) $(CXXSRCS) swig/java/$(ICXXSRCS) $(INCLUDES) $(JAVA_INCLUDE)
-	#$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
-	$(JAVACXXSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) $(CPP_DLLIBS) -o $(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+#java_cpp: $(OBJECTS) #$(SRCS)
+#	#$(SWIG) -java -c++ -includeall -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ICXXSRCS) $(INTERFACEPATH)
+#	$(SWIG) -java -c++ -ignoremissing $(SWIGOPT) -package de.tzi.coap.jni -outdir swig/java/de/tzi/coap/jni/ -o swig/java/$(ICXXSRCS) $(INTERFACEPATH)
+#	#$(SWIG) -java -c++ $(SWIGOPT) $(INTERFACEPATH)
+#	$(CC) -c $(CCSHARED) $(CFLAGS) $(JAVACFLAGS) $(SRCS) $(CXXSRCS) swig/java/$(ICXXSRCS) $(INCLUDES) $(JAVA_INCLUDE)
+#	#$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
+#	$(JAVACXXSHARED) $(CFLAGS) $(OBJECTS) $(IOBJS) $(JAVA_DLNK) $(LIBS) $(CPP_DLLIBS) -o $(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
 
 # -----------------------------------------------------------------
 # Cleaning the java examples
@@ -172,3 +178,6 @@ javaclient:	java
 javaserver:	java
 	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/CoapBase.java
 	@JAVAC@ -cp ./swig/java/ -sourcepath ./examples/java/ -d ./examples/java examples/java/de/tzi/coap/Server.java
+
+runjavaserver:	javaserver
+	java -cp ./swig/java/jnicoap.jar:examples/java/ -Djava.library.path=./swig/java/ de.tzi.coap.Server

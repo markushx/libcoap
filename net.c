@@ -37,7 +37,7 @@
 
 #ifndef WITH_CONTIKI
 
-time_t clock_offset;
+//time_t clock_offset;
 
 static inline coap_queue_t *
 coap_malloc_node() {
@@ -405,7 +405,7 @@ coap_send_ack(coap_context_t *context,
 }
 
 #ifndef WITH_CONTIKI
-#ifndef JAVA
+//#ifndef JAVA
 /* releases space allocated by PDU if free_pdu is set */
 coap_tid_t
 coap_send_impl(coap_context_t *context, 
@@ -417,18 +417,21 @@ coap_send_impl(coap_context_t *context,
   if ( !context || !dst || !pdu )
     return id;
 
+  coap_log(LOG_DEBUG, "coap_send: sendto ...\n");
+
   bytes_written = sendto( context->sockfd, pdu->hdr, pdu->length, 0,
 			  &dst->addr.sa, dst->size);
 
   if (bytes_written >= 0) {
+  coap_log(LOG_DEBUG, "coap_send: sendto done\n");
     coap_transaction_id(dst, pdu, &id);
   } else {
-    coap_log(LOG_CRIT, "coap_send: sendto");
+    coap_log(LOG_CRIT, "coap_send: sendto\n");
   }
 
   return id;
 }
-#endif
+//#endif
 #else  /* WITH_CONTIKI */
 /* releases space allocated by PDU if free_pdu is set */
 coap_tid_t
@@ -626,7 +629,7 @@ check_opt_size(coap_opt_t *opt, unsigned char *maxpos) {
   return 0;
 }
 
-#ifndef JAVA
+//#ifndef JAVA
 int
 coap_read( coap_context_t *ctx ) {
 #ifndef WITH_CONTIKI
@@ -759,7 +762,7 @@ coap_read( coap_context_t *ctx ) {
   coap_delete_node(node);
   return -1;
 }
-#endif
+//#endif
 
 int
 coap_remove_from_queue(coap_queue_t **queue, coap_tid_t id, coap_queue_t **node) {
@@ -984,10 +987,13 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
 	token.s = COAP_OPT_VALUE(opt_iter.option);
       }
 
+      debug("calling handler\n");
       h(context, resource, &node->remote, node->pdu, &token, response);
+      debug("back from handler. type %u code %u\n", response->hdr->type, response->hdr->code);
       if (response->hdr->type != COAP_MESSAGE_NON ||
-	  (response->hdr->code >= 64 
+	  (response->hdr->code >= 64
 	   && !coap_is_mcast(&node->local))) {
+	debug("sending message\n");
 	if (coap_send(context, &node->remote, response) == COAP_INVALID_TID) {
 	  debug("cannot send response for message %d\n", node->pdu->hdr->id);
 	}
