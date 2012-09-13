@@ -94,7 +94,6 @@ jstring,
 %apply long { time_t };
 %ignore coap_get_data;
 
-
 %{
   // libcoap
 #include "coap.h"
@@ -147,11 +146,10 @@ signed
 %enddef
 
 // /usr/include
- //#include <netinet/in.h>
- //#include <sys/socket.h>
-
 //#include "netdb.h"
 //#include "linux/in6.h"
+//#include <netinet/in.h>
+//#include <sys/socket.h>
 /*
 %javaconst(1);
 #include "bits/socket.h"
@@ -192,14 +190,11 @@ signed
   //--------------
   //client:
   //--------------
-  /* JNIEXPORT void JNICALL message_handler_proxy(coap_context_t *ctx, */
-  /*					       coap_queue_t *node, */
-  /*					       void *data) { */
   JNIEXPORT void JNICALL response_handler_proxy(struct coap_context_t  *ctx,
 						const coap_address_t *remote,
 						coap_pdu_t *sent,
 						coap_pdu_t *received,
-						const coap_tid_t id) {
+						const coap_tid_t tid) {
 
     printf("INF: response_handler_proxy()\n");
     //printf("INF: ctx %p, node %p, data %p\n", ctx, node, data);
@@ -228,11 +223,11 @@ signed
     jobject   pdusent_obj;
     jobject   pdureceived_obj;
 
-    jlong     jid;
+    /*jlong     jid;
     jclass    tid_cls;
     jmethodID tid_con;
     jfieldID  tid_fid;
-    jobject   id_obj;
+    jobject   id_obj;*/
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
@@ -266,28 +261,33 @@ signed
       printf("INF: tid\n");
       /*
       tid_cls = (*jenv)->FindClass(jenv, "I");
-      printf("INF: tid2\n");
       //tid_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_tid_t");
+      printf("INF: tid2\n");
       tid_con = (*jenv)->GetMethodID(jenv, tid_cls, "<init>", "(JZ)V");
       printf("INF: tid3\n");
       tid_fid = (*jenv)->GetFieldID(jenv, tid_cls, "swigCPtr", "J");
       *((coap_address_t **)&jid) = (coap_address_t *) id;
       id_obj = (*jenv)->NewObject(jenv, tid_cls, tid_con, jid, NULL);
       */
+      jint jid = 0;
+      int id;
+      id = (int)tid;
+      jid = (jint)id;
+
+      /*
       jint jid = id;
+      */
       printf("INF: done\n");
 
       /* find Java Client/Server class */
       cls = (*jenv)->GetObjectClass(jenv, cached_client_server);
       if (cls == NULL) {
-	//printf("ERR: Client/Server class not found.\n");
+	printf("ERR: Client/Server class not found.\n");
       }
 
-      /*methodid = (*jenv)->GetMethodID(jenv, cls, "messageHandler",
-	"(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/coap_listnode;Ljava/lang/String;)V");*/
       methodid = (*jenv)->GetMethodID(jenv, cls, "responseHandler",
+				      //"(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/__coap_address_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/coap_tid_t;)V");
 				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/__coap_address_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/coap_pdu_t;I)V");
-
 
       if (methodid == NULL) {
 	printf("ERR: messageHandler not found.\n");
@@ -332,7 +332,7 @@ signed
       cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
       coap_register_response_handler(ctx, response_handler_proxy);
     } else {
-      //TODO: handle error
+      printf("ERR: could not attach to thread.\n");
     }
     //printf ("INF: ~register_response_handler()\n");
     //fflush(stdout);
@@ -346,7 +346,7 @@ signed
     if (ret >= 0) {
       (*jenv)->DeleteGlobalRef(jenv, client_server);
     } else {
-      //TODO: handle error
+      printf("ERR: could not attach to thread.\n");
     }
     //printf ("INF: ~deregister_response_handler()\n");
     //fflush(stdout);
@@ -493,7 +493,7 @@ signed
       cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
       coap_register_handler(r, method, (coap_method_handler_t)handler_proxy);
     } else {
-      //TODO: handle error
+      printf("ERR: could not attach to thread.\n");
     }
     //printf ("INF: ~register_response_handler()\n");
     //fflush(stdout);
@@ -664,6 +664,7 @@ coap_context_t *
     fprintf(stderr, "no context available for interface '%s'\n", node);
 
   finish:
+    fprintf(stdout, "get_context~\n");
     freeaddrinfo(result);
     return ctx;
   }
@@ -689,12 +690,18 @@ resolve_address(const str *server, struct sockaddr *dst) {
   hints.ai_socktype = SOCK_DGRAM;
   hints.ai_family = AF_UNSPEC;
 
+  fprintf(stderr, "res_add1\n");
+
   error = getaddrinfo(addrstr, "", &hints, &res);
+
+  fprintf(stderr, "res_add2\n");
 
   if (error != 0) {
     fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(error));
     return error;
   }
+
+  fprintf(stderr, "res_add3\n");
 
   for (ainfo = res; ainfo != NULL; ainfo = ainfo->ai_next) {
     switch (ainfo->ai_family) {
@@ -708,8 +715,14 @@ resolve_address(const str *server, struct sockaddr *dst) {
     }
   }
 
+  fprintf(stderr, "res_add4\n");
+
  finish:
+  fprintf(stderr, "res_add5\n");
+
   freeaddrinfo(res);
+  fprintf(stderr, "res_add6, %u\n", len);
+
   return len;
 }
 
@@ -816,19 +829,50 @@ resolve_address(const str *server, struct sockaddr *dst) {
   /*   return -1; */
   /* } */
 
+ str set_str_s(str strobj, jstring jstr, jint len) {
+   //char *coap_char = coap_malloc(strobj.length+1);
+
+   (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+   int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+   if (ret >= 0) {
+     printf("INF: str1\n");
+     memcpy(strobj.s, (char *)(*jenv)->GetStringUTFChars(jenv, jstr, NULL), len);
+     printf("INF: str2\n");
+     memset(strobj.s + len, 0, 1);
+     printf("INF: str3\n");
+     strobj.length = len;
+     printf("INF: str '%s'\n", strobj.s);
+     return strobj;
+   } else {
+     printf("ERR: could not attach to thread.\n");
+     return ;
+     //Exception?
+   }
+ }
+
   str* create_str(jstring jstr, int jstrlen) {
     char *coap_char;
     str* coap_str = coap_malloc(sizeof(str));//{ 0, NULL };
 
+    fprintf(stderr, "create_str");
+
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
     if (ret >= 0) {
+      fprintf(stderr, "create_str1\n");
       coap_char = (char *)(*jenv)->GetStringUTFChars(jenv, jstr, NULL);
 
+      fprintf(stderr, "create_str2\n");
       coap_str->length = jstrlen;
+      fprintf(stderr, "create_str3\n");
       coap_str->s = (unsigned char *)coap_malloc(coap_str->length + 1);
+      fprintf(stderr, "create_str4\n");
+
       //memcpy(coap_str->s, jstr, coap_str->length + 1);
-      memcpy(coap_str->s, coap_char, coap_str->length + 1);
+      memcpy(coap_str->s, coap_char, coap_str->length);
+      fprintf(stderr, "create_str5\n");
+      memset(coap_str->s + coap_str->length, 0, 1);
+      fprintf(stderr, "create_str6\n");
 
       return coap_str;
     } else {
@@ -931,7 +975,8 @@ void deregister_response_handler(coap_context_t *ctx, jobject client_server);
 int resolve_address(const str *server, struct sockaddr *dst);
 
 
-str* create_str(jstring jstr, int jstrlen);
+str set_str_s(str strobj, jstring jstr, jint len);
+//str* create_str(jstring jstr, int jstrlen);
 //int htons(int port);
 
 struct sockaddr_in6 *sockaddr_in6_create(int family, int port, jstring addr);

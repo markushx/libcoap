@@ -23,6 +23,7 @@ import de.tzi.coap.jni.coap_log_t;
 //import de.tzi.coap.jni.coap_tid_t;
 import de.tzi.coap.jni.__coap_address_t;
 import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
+import de.tzi.coap.jni.str;
 
 import java.util.Random;
 import java.util.Vector;
@@ -31,6 +32,7 @@ import java.util.Vector;
 public class Client extends CoapBase {
 
     int mainLoopSleepTimeMilli = 50;
+    boolean quit = false;
 
     coap_context_t ctx;
     coap_queue_t nextpdu;
@@ -93,7 +95,6 @@ public class Client extends CoapBase {
 
 
     public void run(String destination, int port, int method, Vector<CoapJavaOption> optlist, String payload) {
-	boolean quit = false;
 
 	System.out.println("INF: run()");
 
@@ -123,9 +124,20 @@ public class Client extends CoapBase {
 	// set destination
 	__coap_address_t dst = new __coap_address_t();
 
-	int res = coap.resolve_address(coap.create_str(destination,
-						       destination.length()),
+	/*
+
+	  TODO: resolve address is broken and SIGSEGVs
+
+	str addr = coap.coap_new_string(destination.length());
+	//addr.setS(destination);
+	addr = coap.set_str_s(addr, destination, destination.length());
+	System.out.println("str " + addr.getS());
+
+	int res = coap.resolve_address(addr,
 				       dst.getAddr().getSa());
+	// int res = coap.resolve_address(coap.create_str(destination,
+	// 					       destination.length()),
+	// 			       dst.getAddr().getSa());
 	// int res = coap.resolve_address(coap.create_str(destination,
 	// 					       0),
 	// 			       dst.getAddr().getSa());
@@ -133,30 +145,18 @@ public class Client extends CoapBase {
 	    System.err.println("Could not resolve address.");
 	    return;
 	}
-	dst.setSize(res);
+	dst.setSize(res);*/
 	//dst.getAddr().getSin().setSin_port(coap.htons(port));
 	//dst.getAddr().getSin().setSin_port(port); //FIXME: add htons() for port
 
+
+	dst.setSize(28); // FIXME: hard coded size of sockaddr_in6
 	SWIGTYPE_p_sockaddr_in6 dstsin6;
 	dstsin6 = coap.sockaddr_in6_create(coapConstants.AF_INET6,
 					   port,
 					   destination);
 
 	dst.getAddr().setSin6(dstsin6);
-
-	// TODO: JAVAfy sockaddr_in6 creation?
-	// sockaddr_in6 is already wrapped
-	// still problems with sin6_addr
-	/*
-	  dst = new sockaddr_in6();
-	  if (dst == null) {
-	  System.out.println("Could not create dst");
-	  return;
-	  }
-	  dst.setSin6_family(coapConstants.AF_INET6);
-	  dst.setSin6_port(coap.htons(coapConstants.COAP_DEFAULT_PORT));
-	  //dst.setSin6_addr(addr);
-	  */
 
 	// send pdu
 	coap.coap_send_confirmed(ctx, dst, pdu);
@@ -178,7 +178,6 @@ public class Client extends CoapBase {
 	}
 
 	// free data
-	//coap.sockaddr_in6_free(dst);
 	coap.coap_free_context(ctx);
 
 	System.out.println("INF: ~run()");
@@ -230,6 +229,7 @@ public class Client extends CoapBase {
 				__coap_address_t remote,
 				coap_pdu_t sent,
 				coap_pdu_t received,
+				//coap_tid_t id) {
 				int id) {
 
 	coap_pdu_t pdu = null;
@@ -370,6 +370,7 @@ public class Client extends CoapBase {
 
 	/* our job is done, we can exit at any time */
 	//ready = coap_check_option(received, COAP_OPTION_SUBSCRIPTION, &opt_iter) == NULL;
+	quit = true;
 
 	System.out.println("INF: ~Java messageHandler()");
     }
