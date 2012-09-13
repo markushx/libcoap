@@ -315,7 +315,7 @@ signed
       //printf("INF: ~callback\n");
 
     } else {
-      //printf("ERR: could not attach to thread.\n");
+      printf("ERR: could not attach to thread.\n");
     }
     //printf("INF: ~response_handler_proxy()\n");
     //fflush(stdout);
@@ -418,7 +418,7 @@ signed
       resource_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_resource_t");
       resource_con = (*jenv)->GetMethodID(jenv, ctx_cls, "<init>", "(JZ)V");
       resource_fid = (*jenv)->GetFieldID(jenv, ctx_cls, "swigCPtr", "J");
-      *((coap_context_t **)&jresource) = (coap_resource_t *) resource;
+      *((coap_resource_t **)&jresource) = (coap_resource_t *) resource;
       resource_obj = (*jenv)->NewObject(jenv, resource_cls, resource_con, jresource, NULL);
 
       //printf("INF: peer\n");
@@ -818,18 +818,23 @@ resolve_address(const str *server, struct sockaddr *dst) {
 
   str* create_str(jstring jstr, int jstrlen) {
     char *coap_char;
-    str* coap_str = coap_malloc(sizeof(str));;//{ 0, NULL };
+    str* coap_str = coap_malloc(sizeof(str));//{ 0, NULL };
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      coap_char = (char *)(*jenv)->GetStringUTFChars(jenv, jstr, NULL);
 
-    coap_char = (char *)(*jenv)->GetStringUTFChars(jenv, jstr, NULL);
+      coap_str->length = jstrlen;
+      coap_str->s = (unsigned char *)coap_malloc(coap_str->length + 1);
+      //memcpy(coap_str->s, jstr, coap_str->length + 1);
+      memcpy(coap_str->s, coap_char, coap_str->length + 1);
 
-    coap_str->length = jstrlen;
-    coap_str->s = (unsigned char *)coap_malloc(coap_str->length + 1);
-    //memcpy(coap_str->s, jstr, coap_str->length + 1);
-    memcpy(coap_str->s, coap_char, coap_str->length + 1);
-
-    return coap_str;
+      return coap_str;
+    } else {
+      printf("ERR: could not attach to thread.\n");
+      return NULL;
+    }
   }
 
   /*
@@ -838,31 +843,37 @@ resolve_address(const str *server, struct sockaddr *dst) {
     return nsport;
   }
   */
+
   struct sockaddr_in6 *sockaddr_in6_create(int family, int port, jstring addr) {
     char *stAddr;
 
     //printf("INF: sockaddr_in6_create()\n");
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      stAddr = (char *)(*jenv)->GetStringUTFChars(jenv, addr, NULL);
+      if (stAddr == NULL) {
+	//printf("ERR: stAddr == NULL\n");
+	//fflush(stdout);
+	SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to allocate String.");
+	return NULL;
+      }
+      //printf("INF: family %i port %i addr %s\n", family, port, stAddr);
 
-    stAddr = (char *)(*jenv)->GetStringUTFChars(jenv, addr, NULL);
-    if (stAddr == NULL) {
-      //printf("ERR: stAddr == NULL\n");
+      struct sockaddr_in6 *p = (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
+      p->sin6_family = family;
+      p->sin6_port = htons(port);
+      inet_pton(AF_INET6, stAddr, &(p->sin6_addr));
+
+      (*jenv)->ReleaseStringUTFChars(jenv, addr, stAddr);
+      //printf("INF: ~sockaddr_in6_create() %p\n", p);
       //fflush(stdout);
-      SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to allocate String.");
+      return p;
+    } else {
+      printf("ERR: could not attach to thread.\n");
       return NULL;
     }
-    //printf("INF: family %i port %i addr %s\n", family, port, stAddr);
-
-    struct sockaddr_in6 *p = (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
-    p->sin6_family = family;
-    p->sin6_port = htons(port);
-    inet_pton(AF_INET6, stAddr, &(p->sin6_addr));
-
-    (*jenv)->ReleaseStringUTFChars(jenv, addr, stAddr);
-    //printf("INF: ~sockaddr_in6_create() %p\n", p);
-    //fflush(stdout);
-    return p;
   }
 
   jstring get_addr(struct sockaddr_in6 src) {
@@ -870,17 +881,22 @@ resolve_address(const str *server, struct sockaddr *dst) {
     //printf("INF: get_addr()\n");
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      if ( inet_ntop(src.sin6_family, &src.sin6_addr, cAddr, INET6_ADDRSTRLEN) == 0 ) {
+	//printf("INF: get_addr() inet_ntop fail\n");
+	SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to do address conversion.");
+      } else {
+	//printf("INF: get_addr() inet_ntop success\n");
+      }
 
-    if ( inet_ntop(src.sin6_family, &src.sin6_addr, cAddr, INET6_ADDRSTRLEN) == 0 ) {
-      //printf("INF: get_addr() inet_ntop fail\n");
-      SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to do address conversion.");
+      jstring stAddr = (*jenv)->NewStringUTF(jenv, cAddr);
+
+      return stAddr;
     } else {
-      //printf("INF: get_addr() inet_ntop success\n");
+      printf("ERR: could not attach to thread.\n");
+      return NULL;
     }
-
-    jstring stAddr = (*jenv)->NewStringUTF(jenv, cAddr);
-
-    return stAddr;
   }
 
   jint get_port(struct sockaddr_in6 src) {
