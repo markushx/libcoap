@@ -186,3 +186,6 @@ javaserver:	java
 
 runjavaserver:	javaserver
 	java -cp ./swig/java/jnicoap.jar:examples/java/ -Djava.library.path=./swig/java/ de.tzi.coap.Server
+
+runjavaclient:	javaclient
+	java -cp ./swig/java/jnicoap.jar:examples/java/ -Djava.library.path=./swig/java/ de.tzi.coap.Client
