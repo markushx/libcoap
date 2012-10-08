@@ -88,25 +88,23 @@ jstring,
   $1 = (*jenv)->NewGlobalRef(jenv, $input);
  }
 
+%apply int { socklen_t };
 %apply int { in_port_t };
+%apply int { coap_tid_t };
 %apply long { time_t };
 %ignore coap_get_data;
 
 %{
   // libcoap
-#include "debug.h"
-#include "encode.h"
-#include "list.h"
-#include "net.h"
-#include "pdu.h"
-#include "subscribe.h"
-#include "uri.h"
+#include "coap.h"
 
   // /usr/include
-//#include "netdb.h"
 //#include "linux/in6.h"
-#include <netinet/in.h>
 //#include <sys/select.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 int coap_get_data_java(coap_pdu_t *pdu, unsigned char *data) {
   int len = 0;
@@ -139,15 +137,9 @@ int coap_get_data_java(coap_pdu_t *pdu, unsigned char *data) {
 %typemap(javaout) (unsigned int) = int;
 
 // libcoap
-#include "debug.h"
-#include "encode.h"
-#include "list.h"
-#include "net.h"
-#include "pdu.h"
-%ignore coap_opt_t;
+#include "coap.h"
 
-#include "subscribe.h"
-#include "uri.h"
+%ignore coap_opt_t;
 
 %define __signed__
 signed
@@ -156,6 +148,8 @@ signed
 // /usr/include
 //#include "netdb.h"
 //#include "linux/in6.h"
+//#include <netinet/in.h>
+//#include <sys/socket.h>
 /*
 %javaconst(1);
 #include "bits/socket.h"
@@ -193,10 +187,16 @@ signed
     return;
   }
 
-  JNIEXPORT void JNICALL message_handler_proxy(coap_context_t *ctx,
-					       coap_queue_t *node,
-					       void *data) {
-    //printf("INF: message_handler_proxy()\n");
+  //--------------
+  //client:
+  //--------------
+  JNIEXPORT void JNICALL response_handler_proxy(struct coap_context_t  *ctx,
+						const coap_address_t *remote,
+						coap_pdu_t *sent,
+						coap_pdu_t *received,
+						const coap_tid_t tid) {
+
+    printf("INF: response_handler_proxy()\n");
     //printf("INF: ctx %p, node %p, data %p\n", ctx, node, data);
 
     //printf("--------------------------\n");
@@ -209,11 +209,25 @@ signed
     jfieldID  ctx_fid;
     jobject   ctx_obj;
 
-    jlong     jnode;
-    jclass    node_cls;
-    jmethodID node_con;
-    jfieldID  node_fid;
-    jobject   node_obj;
+    jlong     jremote;
+    jclass    remote_cls;
+    jmethodID remote_con;
+    jfieldID  remote_fid;
+    jobject   remote_obj;
+
+    jlong     jpdusent;
+    jlong     jpdureceived;
+    jclass    pdu_cls;
+    jmethodID pdu_con;
+    jfieldID  pdu_fid;
+    jobject   pdusent_obj;
+    jobject   pdureceived_obj;
+
+    /*jlong     jid;
+    jclass    tid_cls;
+    jmethodID tid_con;
+    jfieldID  tid_fid;
+    jobject   id_obj;*/
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
@@ -221,39 +235,77 @@ signed
     if (ret >= 0) {
 
       //TODO: handle null pointers.
+      printf("INF: ctx\n");
       ctx_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_context_t");
       ctx_con = (*jenv)->GetMethodID(jenv, ctx_cls, "<init>", "(JZ)V");
       ctx_fid = (*jenv)->GetFieldID(jenv, ctx_cls, "swigCPtr", "J");
       *((coap_context_t **)&jctx) = (coap_context_t *) ctx;
       ctx_obj = (*jenv)->NewObject(jenv, ctx_cls, ctx_con, jctx, NULL);
 
-      node_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_listnode");
-      node_con = (*jenv)->GetMethodID(jenv, node_cls, "<init>", "(JZ)V");
-      node_fid = (*jenv)->GetFieldID(jenv, node_cls, "swigCPtr", "J");
-      *((coap_queue_t **)&jnode) = (coap_queue_t *) node;
-      node_obj = (*jenv)->NewObject(jenv, node_cls, node_con, jnode, NULL);
+      printf("INF: remote\n");
+      remote_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/__coap_address_t");
+      remote_con = (*jenv)->GetMethodID(jenv, remote_cls, "<init>", "(JZ)V");
+      remote_fid = (*jenv)->GetFieldID(jenv, remote_cls, "swigCPtr", "J");
+      *((coap_address_t **)&jremote) = (coap_address_t *) remote;
+      remote_obj = (*jenv)->NewObject(jenv, remote_cls, remote_con, jremote, NULL);
+
+      printf("INF: pdu\n");
+      pdu_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_pdu_t");
+      pdu_con = (*jenv)->GetMethodID(jenv, pdu_cls, "<init>", "(JZ)V");
+      pdu_fid = (*jenv)->GetFieldID(jenv, pdu_cls, "swigCPtr", "J");
+      *((coap_pdu_t **)&jpdusent) = (coap_pdu_t *) sent;
+      pdusent_obj = (*jenv)->NewObject(jenv, pdu_cls, pdu_con, jpdusent, NULL);
+      *((coap_pdu_t **)&jpdureceived) = (coap_pdu_t *) received;
+      pdureceived_obj = (*jenv)->NewObject(jenv, pdu_cls, pdu_con, jpdureceived, NULL);
+
+      printf("INF: tid\n");
+      /*
+      tid_cls = (*jenv)->FindClass(jenv, "I");
+      //tid_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_tid_t");
+      printf("INF: tid2\n");
+      tid_con = (*jenv)->GetMethodID(jenv, tid_cls, "<init>", "(JZ)V");
+      printf("INF: tid3\n");
+      tid_fid = (*jenv)->GetFieldID(jenv, tid_cls, "swigCPtr", "J");
+      *((coap_address_t **)&jid) = (coap_address_t *) id;
+      id_obj = (*jenv)->NewObject(jenv, tid_cls, tid_con, jid, NULL);
+      */
+      jint jid = 0;
+      int id;
+      id = (int)tid;
+      jid = (jint)id;
+
+      /*
+      jint jid = id;
+      */
+      printf("INF: done\n");
 
       /* find Java Client/Server class */
       cls = (*jenv)->GetObjectClass(jenv, cached_client_server);
       if (cls == NULL) {
-	//printf("ERR: Client/Server class not found.\n");
+	printf("ERR: Client/Server class not found.\n");
       }
 
-      methodid = (*jenv)->GetMethodID(jenv, cls, "messageHandler",
-				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/coap_listnode;Ljava/lang/String;)V");
+      methodid = (*jenv)->GetMethodID(jenv, cls, "responseHandler",
+				      //"(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/__coap_address_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/coap_tid_t;)V");
+				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/__coap_address_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/coap_pdu_t;I)V");
+
       if (methodid == NULL) {
-	//printf("ERR: messageHandler not found.\n");
+	printf("ERR: messageHandler not found.\n");
 	return;
       } else {
 	//printf("INF: messageHandler found.\n");
       }
 
       //TODO: handle data properly (needed at all?)
-      jstring data_obj = (*jenv)->NewStringUTF(jenv, "");
+      //jstring data_obj = (*jenv)->NewStringUTF(jenv, "");
 
       //printf("INF: callback into Java %p\n", methodid);
-      (*jenv)->CallNonvirtualVoidMethod(jenv, cached_client_server, cls, methodid,
-					ctx_obj, node_obj, data_obj);
+      /*(*jenv)->CallNonvirtualVoidMethod(jenv, cached_client_server, cls, methodid,
+	ctx_obj, node_obj, data_obj);*/
+      (*jenv)->CallNonvirtualVoidMethod(jenv,
+					cached_client_server, cls, methodid,
+					ctx_obj, remote_obj,
+					pdusent_obj, pdureceived_obj, jid);
 
       if ((*jenv)->ExceptionOccurred(jenv)) {
 	//printf("ERR: Exception occurred.\n");
@@ -263,31 +315,193 @@ signed
       //printf("INF: ~callback\n");
 
     } else {
-      //printf("ERR: could not attach to thread.\n");
+      printf("ERR: could not attach to thread.\n");
     }
-    //printf("INF: ~message_handler_proxy()\n");
+    //printf("INF: ~response_handler_proxy()\n");
     //fflush(stdout);
   }
 
-  /* register message handler */
-  void register_message_handler(coap_context_t *ctx, jobject client_server) {
-    //printf ("INF: register_message_handler(%p, %p)\n", ctx, client_server);
+  /* register response handler */
+  void register_response_handler(coap_context_t *ctx, jobject client_server) {
+    //printf ("INF: register_response_handler(%p, %p)\n", ctx, client_server);
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
     if (ret >= 0) {
       cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
-      coap_register_message_handler(ctx, message_handler_proxy);
+      coap_register_response_handler(ctx, response_handler_proxy);
     } else {
-      //TODO: handle error
+      printf("ERR: could not attach to thread.\n");
     }
-    //printf ("INF: ~register_message_handler()\n");
+    //printf ("INF: ~register_response_handler()\n");
     //fflush(stdout);
   }
 
-  void deregister_message_handler(coap_context_t *ctx, jobject client_server) {
-    //printf ("INF: deregister_message_handler(%p, %p)\n", ctx, client_server);
+  void deregister_response_handler(coap_context_t *ctx, jobject client_server) {
+    //printf ("INF: deregister_response_handler(%p, %p)\n", ctx, client_server);
+    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      (*jenv)->DeleteGlobalRef(jenv, client_server);
+    } else {
+      printf("ERR: could not attach to thread.\n");
+    }
+    //printf ("INF: ~deregister_response_handler()\n");
+    //fflush(stdout);
+  }
+
+  //--------------
+  //server:
+  //--------------
+  JNIEXPORT void JNICALL handler_proxy(struct coap_context_t  *ctx,
+				       struct coap_resource_t *resource,
+				       const coap_address_t *peer,
+				       coap_pdu_t *request,
+				       str* token,
+				       coap_pdu_t *response) {
+    //printf("INF: handler_proxy()\n");
+    //printf("INF: ctx %p\n", ctx);
+
+    //printf("--------------------------\n");
+    //coap_show_pdu( node->pdu );
+    //printf("--------------------------\n");
+
+    jlong     jctx;
+    jclass    ctx_cls;
+    jmethodID ctx_con;
+    jfieldID  ctx_fid;
+    jobject   ctx_obj;
+
+    jlong     jresource;
+    jclass    resource_cls;
+    jmethodID resource_con;
+    jfieldID  resource_fid;
+    jobject   resource_obj;
+
+    jlong     jpeer;
+    jclass    peer_cls;
+    jmethodID peer_con;
+    jfieldID  peer_fid;
+    jobject   peer_obj;
+
+    jlong     jrequest;
+    jlong     jresponse;
+    jclass    pdu_cls;
+    jmethodID pdu_con;
+    jfieldID  pdu_fid;
+    jobject   request_obj;
+    jobject   response_obj;
+
+    jlong     jtoken;
+    jclass    token_cls;
+    jmethodID token_con;
+    jfieldID  token_fid;
+    jobject   token_obj;
+
+    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+
+      //printf("INF: figuring out java objects\n");
+      //TODO: handle null pointers.
+      //printf("INF: context\n");
+      ctx_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_context_t");
+      ctx_con = (*jenv)->GetMethodID(jenv, ctx_cls, "<init>", "(JZ)V");
+      ctx_fid = (*jenv)->GetFieldID(jenv, ctx_cls, "swigCPtr", "J");
+      *((coap_context_t **)&jctx) = (coap_context_t *) ctx;
+      ctx_obj = (*jenv)->NewObject(jenv, ctx_cls, ctx_con, jctx, NULL);
+
+      //printf("INF: resource\n");
+      resource_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_resource_t");
+      resource_con = (*jenv)->GetMethodID(jenv, ctx_cls, "<init>", "(JZ)V");
+      resource_fid = (*jenv)->GetFieldID(jenv, ctx_cls, "swigCPtr", "J");
+      *((coap_resource_t **)&jresource) = (coap_resource_t *) resource;
+      resource_obj = (*jenv)->NewObject(jenv, resource_cls, resource_con, jresource, NULL);
+
+      //printf("INF: peer\n");
+      peer_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/__coap_address_t");
+      peer_con = (*jenv)->GetMethodID(jenv, peer_cls, "<init>", "(JZ)V");
+      peer_fid = (*jenv)->GetFieldID(jenv, peer_cls, "swigCPtr", "J");
+      *((coap_address_t **)&jpeer) = (coap_address_t *) peer;
+      peer_obj = (*jenv)->NewObject(jenv, peer_cls, peer_con, jpeer, NULL);
+
+      //printf("INF: pdus\n");
+      pdu_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_pdu_t");
+      pdu_con = (*jenv)->GetMethodID(jenv, pdu_cls, "<init>", "(JZ)V");
+      pdu_fid = (*jenv)->GetFieldID(jenv, pdu_cls, "swigCPtr", "J");
+      *((coap_pdu_t **)&jrequest) = (coap_pdu_t *) request;
+      request_obj = (*jenv)->NewObject(jenv, pdu_cls, pdu_con, jrequest, NULL);
+      *((coap_pdu_t **)&jresponse) = (coap_pdu_t *) response;
+      response_obj = (*jenv)->NewObject(jenv, pdu_cls, pdu_con, jresponse, NULL);
+
+      //printf("INF: token\n");
+      token_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/str");
+      token_con = (*jenv)->GetMethodID(jenv, token_cls, "<init>", "(JZ)V");
+      token_fid = (*jenv)->GetFieldID(jenv, token_cls, "swigCPtr", "J");
+      *((str **)&token) = (str *) token;
+      token_obj = (*jenv)->NewObject(jenv, token_cls, token_con, jtoken, NULL);
+
+      //printf("INF: figured out java objects\n");
+
+      /* find Java Client/Server class */
+      cls = (*jenv)->GetObjectClass(jenv, cached_client_server);
+      if (cls == NULL) {
+	printf("ERR: Client/Server class not found.\n");
+      }
+
+      methodid = (*jenv)->GetMethodID(jenv, cls, "handler",
+				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/coap_resource_t;Lde/tzi/coap/jni/__coap_address_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/str;Lde/tzi/coap/jni/coap_pdu_t;)V");
+
+      if (methodid == NULL) {
+	printf("ERR: Java handler not found.\n");
+	return;
+      } else {
+	//printf("INF: messageHandler found.\n");
+      }
+
+      //printf("INF: callback into Java %p\n", methodid);
+      (*jenv)->CallNonvirtualVoidMethod(jenv,
+					cached_client_server, cls, methodid,
+					ctx_obj, resource_obj, peer_obj,
+					request_obj, token_obj, response_obj);
+
+      if ((*jenv)->ExceptionOccurred(jenv)) {
+	printf("ERR: Exception occurred.\n");
+	SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "Exception in callback.");
+	return;
+      }
+      //printf("INF: ~callback\n");
+
+    } else {
+      printf("ERR: could not attach to thread.\n");
+    }
+    //printf("INF: ~response_handler_proxy()\n");
+    fflush(stdout);
+  }
+
+  /* register handler */
+  void register_handler(coap_resource_t *r, unsigned char method , jobject client_server) {
+    //printf ("INF: register_response_handler(%p, %p)\n", ctx, client_server);
+
+    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
+      coap_register_handler(r, method, (coap_method_handler_t)handler_proxy);
+    } else {
+      printf("ERR: could not attach to thread.\n");
+    }
+    //printf ("INF: ~register_response_handler()\n");
+    //fflush(stdout);
+  }
+
+  /*
+  void deregister_handler(coap_resource_t *r, jobject client_server) {
+    //printf ("INF: deregister_response_handler(%p, %p)\n", ctx, client_server);
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
@@ -296,96 +510,97 @@ signed
     } else {
       //TODO: handle error
     }
-    //printf ("INF: ~deregister_message_handler()\n");
+    //printf ("INF: ~deregister_response_handler()\n");
     //fflush(stdout);
   }
+  */
 
-  JNIEXPORT void JNICALL coap_send_impl(coap_context_t *ctx,
-					const struct sockaddr_in6 *dst,
-					coap_pdu_t *pdu,
-					int free_pdu) {
+  /* JNIEXPORT void JNICALL coap_send_impl(coap_context_t *ctx, */
+  /* 					const struct sockaddr_in6 *dst, */
+  /* 					coap_pdu_t *pdu, */
+  /* 					int free_pdu) { */
 
-    jlong     jctx;
-    jclass    ctx_cls;
-    jmethodID ctx_con;
-    jfieldID  ctx_fid;
-    jobject   ctx_obj;
+  /*   jlong     jctx; */
+  /*   jclass    ctx_cls; */
+  /*   jmethodID ctx_con; */
+  /*   jfieldID  ctx_fid; */
+  /*   jobject   ctx_obj; */
 
-    jlong     jpdu;
-    jclass    pdu_cls;
-    jmethodID pdu_con;
-    jfieldID  pdu_fid;
-    jobject   pdu_obj;
+  /*   jlong     jpdu; */
+  /*   jclass    pdu_cls; */
+  /*   jmethodID pdu_con; */
+  /*   jfieldID  pdu_fid; */
+  /*   jobject   pdu_obj; */
 
-    jlong     jdst;
-    jclass    dst_cls;
-    jmethodID dst_con;
-    jfieldID  dst_fid;
-    jobject   dst_obj;
+  /*   jlong     jdst; */
+  /*   jclass    dst_cls; */
+  /*   jmethodID dst_con; */
+  /*   jfieldID  dst_fid; */
+  /*   jobject   dst_obj; */
 
-    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+  /*   (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4); */
 
-    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
-    if (ret >= 0) {
+  /*   int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL); */
+  /*   if (ret >= 0) { */
 
-      //TODO: handle null pointers.
-      ctx_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_context_t");
-      ctx_con = (*jenv)->GetMethodID(jenv, ctx_cls, "<init>", "(JZ)V");
-      ctx_fid = (*jenv)->GetFieldID(jenv, ctx_cls, "swigCPtr", "J");
-      *((coap_context_t **)&jctx) = (coap_context_t *) ctx;
-      ctx_obj = (*jenv)->NewObject(jenv, ctx_cls, ctx_con, jctx, NULL);
+  /*     //TODO: handle null pointers. */
+  /*     ctx_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_context_t"); */
+  /*     ctx_con = (*jenv)->GetMethodID(jenv, ctx_cls, "<init>", "(JZ)V"); */
+  /*     ctx_fid = (*jenv)->GetFieldID(jenv, ctx_cls, "swigCPtr", "J"); */
+  /*     *((coap_context_t **)&jctx) = (coap_context_t *) ctx; */
+  /*     ctx_obj = (*jenv)->NewObject(jenv, ctx_cls, ctx_con, jctx, NULL); */
 
-      pdu_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_pdu_t");
-      pdu_con = (*jenv)->GetMethodID(jenv, pdu_cls, "<init>", "(JZ)V");
-      pdu_fid = (*jenv)->GetFieldID(jenv, pdu_cls, "swigCPtr", "J");
-      *((coap_pdu_t **)&jpdu) = (coap_pdu_t *) pdu;
-      pdu_obj = (*jenv)->NewObject(jenv, pdu_cls, pdu_con, jpdu, NULL);
+  /*     pdu_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_pdu_t"); */
+  /*     pdu_con = (*jenv)->GetMethodID(jenv, pdu_cls, "<init>", "(JZ)V"); */
+  /*     pdu_fid = (*jenv)->GetFieldID(jenv, pdu_cls, "swigCPtr", "J"); */
+  /*     *((coap_pdu_t **)&jpdu) = (coap_pdu_t *) pdu; */
+  /*     pdu_obj = (*jenv)->NewObject(jenv, pdu_cls, pdu_con, jpdu, NULL); */
 
-      //dst_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/sockaddr_in6");
-      dst_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/SWIGTYPE_p_sockaddr_in6");
-      dst_con = (*jenv)->GetMethodID(jenv, dst_cls, "<init>", "(JZ)V");
-      dst_fid = (*jenv)->GetFieldID(jenv, dst_cls, "swigCPtr", "J");
-      *((struct sockaddr_in6 **)&jdst) = (struct sockaddr_in6 *) dst;
-      dst_obj = (*jenv)->NewObject(jenv, dst_cls, dst_con, jdst, NULL);
+  /*     //dst_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/sockaddr_in6"); */
+  /*     dst_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/SWIGTYPE_p_sockaddr_in6"); */
+  /*     dst_con = (*jenv)->GetMethodID(jenv, dst_cls, "<init>", "(JZ)V"); */
+  /*     dst_fid = (*jenv)->GetFieldID(jenv, dst_cls, "swigCPtr", "J"); */
+  /*     *((struct sockaddr_in6 **)&jdst) = (struct sockaddr_in6 *) dst; */
+  /*     dst_obj = (*jenv)->NewObject(jenv, dst_cls, dst_con, jdst, NULL); */
 
-      //FIXME!!!!!!!!!
-      /* find Java Client/Server class */
-      cls = (*jenv)->GetObjectClass(jenv, cached_client_server);
-      if (cls == NULL) {
-	//printf("ERR: Client/Server class not found.\n");
-      }
+  /*     //FIXME!!!!!!!!! */
+  /*     /\* find Java Client/Server class *\/ */
+  /*     cls = (*jenv)->GetObjectClass(jenv, cached_client_server); */
+  /*     if (cls == NULL) { */
+  /* 	//printf("ERR: Client/Server class not found.\n"); */
+  /*     } */
 
-      /*methodid = (*jenv)->GetMethodID(jenv, cls, "coap_send_impl",
-	"(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/sockaddr_in6;Lde/tzi/coap/jni/coap_pdu_t;I)V");*/
-      methodid = (*jenv)->GetMethodID(jenv, cls, "coap_send_impl",
-				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/SWIGTYPE_p_sockaddr_in6;Lde/tzi/coap/jni/coap_pdu_t;I)V");
+  /*     /\*methodid = (*jenv)->GetMethodID(jenv, cls, "coap_send_impl", */
+  /* 	"(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/sockaddr_in6;Lde/tzi/coap/jni/coap_pdu_t;I)V");*\/ */
+  /*     methodid = (*jenv)->GetMethodID(jenv, cls, "coap_send_impl", */
+  /* 				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/SWIGTYPE_p_sockaddr_in6;Lde/tzi/coap/jni/coap_pdu_t;I)V"); */
 
-      if (methodid == NULL) {
-	//printf("ERR: messageHandler not found.\n");
-	return;
-      } else {
-	//printf("INF: messageHandler found.\n");
-      }
+  /*     if (methodid == NULL) { */
+  /* 	//printf("ERR: messageHandler not found.\n"); */
+  /* 	return; */
+  /*     } else { */
+  /* 	//printf("INF: messageHandler found.\n"); */
+  /*     } */
 
-      jint free = free_pdu;
+  /*     jint free = free_pdu; */
 
-      //printf("INF: callback into Java %p\n", methodid);
-      (*jenv)->CallNonvirtualVoidMethod(jenv, cached_client_server, cls, methodid,
-					ctx_obj, dst_obj, pdu_obj, free);
+  /*     //printf("INF: callback into Java %p\n", methodid); */
+  /*     (*jenv)->CallNonvirtualVoidMethod(jenv, cached_client_server, cls, methodid, */
+  /* 					ctx_obj, dst_obj, pdu_obj, free); */
 
-      if ((*jenv)->ExceptionOccurred(jenv)) {
-	//printf("ERR: Exception occurred.\n");
-	SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "Exception in callback.");
-	return;
-      }
-      //printf("INF: ~callback\n");
+  /*     if ((*jenv)->ExceptionOccurred(jenv)) { */
+  /* 	//printf("ERR: Exception occurred.\n"); */
+  /* 	SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "Exception in callback."); */
+  /* 	return; */
+  /*     } */
+  /*     //printf("INF: ~callback\n"); */
 
-    } else {
-      //printf("ERR: could not attach to thread.\n");
-    }
-    //printf("INF: ~message_handler_proxy()\n");
-    //fflush(stdout);
-  }
+  /*   } else { */
+  /*     //printf("ERR: could not attach to thread.\n"); */
+  /*   } */
+  /*   //printf("INF: ~response_handler_proxy()\n"); */
+  /*   //fflush(stdout); */
+  /* } */
 
   jbyteArray get_bytes(coap_pdu_t pdu) {
 
@@ -398,7 +613,8 @@ signed
     return b_array;
   }
 
-#define options_start(p) ((coap_opt_t *) ( (unsigned char *)p->hdr + sizeof ( coap_hdr_t ) ))
+  /*
+  #define options_start(p) ((coap_opt_t *) ( (unsigned char *)p->hdr + sizeof ( coap_hdr_t ) ))
 
 #define options_end(p, opt) {			\
   unsigned char opt_code = 0, cnt;		\
@@ -408,66 +624,269 @@ signed
     *opt = (coap_opt_t *)( (unsigned char *)(*opt) + COAP_OPT_SIZE(**opt)); \
   } \
 }
+*/
 
-  void coap_read(coap_context_t *ctx, struct sockaddr_in6 src, jbyteArray receivedData, int length) {
+coap_context_t *
+  get_context(const char *node, const char *port) {
+    coap_context_t *ctx = NULL;
+    int s;
+    struct addrinfo hints;
+    struct addrinfo *result, *rp;
 
-    coap_queue_t *node;
-    coap_opt_t *opt;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
+    hints.ai_socktype = SOCK_DGRAM; /* Coap uses UDP */
+    hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
 
-    if ( length < 0 ) {
-      //printf("coap_read: recvfrom");
-      return;
+    s = getaddrinfo(node, port, &hints, &result);
+    if ( s != 0 ) {
+      fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+      return NULL;
     }
 
-    if ( length < sizeof(coap_hdr_t)) {
-      //printf("coap_read: discarded invalid frame (too small)\n" );
-      return;
+    /* iterate through results until success */
+    for (rp = result; rp != NULL; rp = rp->ai_next) {
+      coap_address_t addr;
+
+      if (rp->ai_addrlen <= sizeof(addr.addr)) {
+	coap_address_init(&addr);
+	addr.size = rp->ai_addrlen;
+	memcpy(&addr.addr, rp->ai_addr, rp->ai_addrlen);
+
+	ctx = coap_new_context(&addr);
+	if (ctx) {
+	  /* TODO: output address:port for successful binding */
+	  goto finish;
+	}
+      }
     }
 
-    node = coap_new_node();
-    if ( !node ) {
-      //printf("INF: coap_read: could not create node\n");
-    }
+    fprintf(stderr, "no context available for interface '%s'\n", node);
 
-    node->pdu = coap_new_pdu();
-    if ( !node->pdu ) {
-      coap_delete_node( node );
-      //printf("INF: coap_read: !node->pdu: coap_delete_node\n");
-    }
-
-    time( &node->t );
-    memcpy( &node->remote, &src, sizeof( src ) );
-
-    jbyte *bytes = (*jenv)->GetByteArrayElements(jenv, receivedData, NULL);
-    memcpy( node->pdu->hdr, bytes, length );
-    node->pdu->length = length;
-    options_end( node->pdu, &opt );
-
-    if (node->pdu->hdr->version != COAP_DEFAULT_VERSION ) {
-      //printf("coap_read: discarded invalid frame (wrong version 0x%x)\n", node->pdu->hdr->version );
-      coap_delete_node( node );
-      return;
-    }
-
-    if ( (unsigned char *)node->pdu->hdr + node->pdu->length < (unsigned char *)opt )
-      node->pdu->data = (unsigned char *)node->pdu->hdr + node->pdu->length;
-    else
-      node->pdu->data = (unsigned char *)opt;
-
-    coap_insert_node( &ctx->recvqueue, node, order_transaction_id );
-
-    (*jenv)->ReleaseByteArrayElements(jenv, receivedData, bytes, JNI_ABORT);
-
-    static char addr[INET6_ADDRSTRLEN];
-    if ( inet_ntop(src.sin6_family, &src.sin6_addr, addr, INET6_ADDRSTRLEN) == 0 ) {
-      //printf("coap_read: inet_ntop failed");
-    } else {
-      //printf("** received from [%s]:%d:\n  ",addr,ntohs(src.sin6_port));
-    }
-
-    coap_show_pdu( node->pdu );
-    return;
+  finish:
+    fprintf(stdout, "get_context~\n");
+    freeaddrinfo(result);
+    return ctx;
   }
+
+int
+resolve_address(const str *server, struct sockaddr *dst) {
+
+  struct addrinfo *res, *ainfo;
+  struct addrinfo hints;
+  static char addrstr[256];
+  int error, len=-1;
+
+  memset(addrstr, 0, sizeof(addrstr));
+  if (server->length)
+    memcpy(addrstr, server->s, server->length);
+  else
+    memcpy(addrstr, "localhost", 9);
+
+  fprintf(stderr, "getaddrinfo: %p '%s'\n", server->s, server->s);
+  fprintf(stderr, "getaddrinfo: len %u\n", server->length);
+
+  memset ((char *)&hints, 0, sizeof(hints));
+  hints.ai_socktype = SOCK_DGRAM;
+  hints.ai_family = AF_UNSPEC;
+
+  fprintf(stderr, "res_add1\n");
+
+  error = getaddrinfo(addrstr, "", &hints, &res);
+
+  fprintf(stderr, "res_add2\n");
+
+  if (error != 0) {
+    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(error));
+    return error;
+  }
+
+  fprintf(stderr, "res_add3\n");
+
+  for (ainfo = res; ainfo != NULL; ainfo = ainfo->ai_next) {
+    switch (ainfo->ai_family) {
+    case AF_INET6:
+    case AF_INET:
+      len = ainfo->ai_addrlen;
+      memcpy(dst, ainfo->ai_addr, len);
+      goto finish;
+    default:
+      ;
+    }
+  }
+
+  fprintf(stderr, "res_add4\n");
+
+ finish:
+  fprintf(stderr, "res_add5\n");
+
+  freeaddrinfo(res);
+  fprintf(stderr, "res_add6, %u\n", len);
+
+  return len;
+}
+
+
+  /* int coap_read(coap_context_t *ctx, struct sockaddr_in6 src, */
+  /* 		 jbyteArray receivedData, int bytes_read) { */
+
+  /*   static char buf[COAP_MAX_PDU_SIZE]; */
+  /*   coap_hdr_t *pdu = (coap_hdr_t *)buf; */
+
+  /*   coap_address_t /\*src, *\/dst; // TODO: src is not sockaddr_in6 anymore */
+  /*   coap_queue_t *node; */
+
+  /*   //coap_address_init(&src); */
+
+  /*   jbyte *bytes = (*jenv)->GetByteArrayElements(jenv, receivedData, NULL); */
+  /*   memcpy( buf, bytes, bytes_read ); //TODO: check: sizeof(buf) or bytes_read? */
+
+  /*   if ( bytes_read < 0 ) { */
+  /*     warn("coap_read: recvfrom"); */
+  /*     return -1; */
+  /*   } */
+
+  /*   if ( (size_t)bytes_read < sizeof(coap_hdr_t)) { */
+  /*     debug("coap_read: discarded invalid frame (too small)\n" ); */
+  /*     return -1; */
+  /*   } */
+
+  /*   if ( pdu->version != COAP_DEFAULT_VERSION ) { */
+  /*     debug("coap_read: unknown protocol version\n" ); */
+  /*     return -1; */
+  /*   } */
+
+  /*   node = coap_new_node(); */
+  /*   if ( !node ) { */
+  /*     return -1; */
+  /*   } */
+
+  /*   node->pdu = coap_pdu_init(0, 0, 0, bytes_read); */
+  /*   if ( !node->pdu ) */
+  /*     goto error; */
+
+  /*   coap_ticks( &node->t ); */
+  /*   memcpy(&node->local, &dst, sizeof(coap_address_t)); */
+  /*   memcpy(&node->remote, &src, sizeof(coap_address_t)); */
+
+  /*   /\* "parse" received PDU by filling pdu structure *\/ */
+  /*   memcpy( node->pdu->hdr, buf, bytes_read ); */
+  /*   node->pdu->length = bytes_read; */
+
+  /*   /\* finally calculate beginning of data block *\/ */
+  /*   { */
+  /*     coap_opt_t *opt = options_start(node->pdu); */
+  /*     unsigned char cnt = node->pdu->hdr->optcnt; */
+
+  /*     /\* Note that we cannot use the official options iterator here as */
+  /*      * it eats up the fence posts. *\/ */
+  /*     while (cnt && opt) { */
+  /* 	if ((unsigned char *)node->pdu->hdr + node->pdu->max_size <= opt) { */
+  /* 	  if (node->pdu->hdr->type == COAP_MESSAGE_CON || */
+  /* 	      node->pdu->hdr->type == COAP_MESSAGE_NON) { */
+  /* 	    coap_send_message_type(ctx, &node->remote, node->pdu, */
+  /* 				   COAP_MESSAGE_RST); */
+  /* 	    debug("sent RST on malformed message\n"); */
+  /* 	  } else { */
+  /* 	    debug("dropped malformed message\n"); */
+  /* 	} */
+  /* 	  goto error; */
+  /* 	} */
+
+  /* 	if (node->pdu->hdr->optcnt == COAP_OPT_LONG) { */
+  /* 	  if (*opt == COAP_OPT_END) { */
+  /* 	    ++opt; */
+  /* 	    break; */
+  /* 	  } */
+  /* 	} else { */
+  /* 	  --cnt; */
+  /* 	} */
+  /* 	opt = options_next(opt); */
+  /*     } */
+
+  /*     node->pdu->data = (unsigned char *)opt; */
+  /*   } */
+
+  /*   /\* and add new node to receive queue *\/ */
+  /*   coap_transaction_id(&node->remote, node->pdu, &node->id); */
+  /*   coap_insert_node(&ctx->recvqueue, node, _order_timestamp); */
+
+  /*   (*jenv)->ReleaseByteArrayElements(jenv, receivedData, bytes, JNI_ABORT); */
+
+  /*   /\* */
+  /*   static char addr[INET6_ADDRSTRLEN]; */
+  /*   if ( inet_ntop(src.sin6_family, &src.sin6_addr, addr, INET6_ADDRSTRLEN) == 0 ) { */
+  /*     //printf("coap_read: inet_ntop failed"); */
+  /*   } else { */
+  /*     //printf("** received from [%s]:%d:\n  ",addr,ntohs(src.sin6_port)); */
+  /*   } */
+  /*   *\/ */
+  /*   coap_show_pdu( node->pdu ); */
+
+  /*   return 0; */
+  /* error: */
+  /*   coap_delete_node(node); */
+  /*   return -1; */
+  /* } */
+
+ str set_str_s(str strobj, jstring jstr, jint len) {
+   //char *coap_char = coap_malloc(strobj.length+1);
+
+   (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+   int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+   if (ret >= 0) {
+     printf("INF: str1\n");
+     memcpy(strobj.s, (char *)(*jenv)->GetStringUTFChars(jenv, jstr, NULL), len);
+     printf("INF: str2\n");
+     memset(strobj.s + len, 0, 1);
+     printf("INF: str3\n");
+     strobj.length = len;
+     printf("INF: str '%s'\n", strobj.s);
+     return strobj;
+   } else {
+     printf("ERR: could not attach to thread.\n");
+     return ;
+     //Exception?
+   }
+ }
+
+  str* create_str(jstring jstr, int jstrlen) {
+    char *coap_char;
+    str* coap_str = coap_malloc(sizeof(str));//{ 0, NULL };
+
+    fprintf(stderr, "create_str");
+
+    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      fprintf(stderr, "create_str1\n");
+      coap_char = (char *)(*jenv)->GetStringUTFChars(jenv, jstr, NULL);
+
+      fprintf(stderr, "create_str2\n");
+      coap_str->length = jstrlen;
+      fprintf(stderr, "create_str3\n");
+      coap_str->s = (unsigned char *)coap_malloc(coap_str->length + 1);
+      fprintf(stderr, "create_str4\n");
+
+      //memcpy(coap_str->s, jstr, coap_str->length + 1);
+      memcpy(coap_str->s, coap_char, coap_str->length);
+      fprintf(stderr, "create_str5\n");
+      memset(coap_str->s + coap_str->length, 0, 1);
+      fprintf(stderr, "create_str6\n");
+
+      return coap_str;
+    } else {
+      printf("ERR: could not attach to thread.\n");
+      return NULL;
+    }
+  }
+
+  /*
+  int htons(int port) {
+    int nsport = htons(port);
+    return nsport;
+  }
+  */
 
   struct sockaddr_in6 *sockaddr_in6_create(int family, int port, jstring addr) {
     char *stAddr;
@@ -475,25 +894,30 @@ signed
     //printf("INF: sockaddr_in6_create()\n");
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      stAddr = (char *)(*jenv)->GetStringUTFChars(jenv, addr, NULL);
+      if (stAddr == NULL) {
+	//printf("ERR: stAddr == NULL\n");
+	//fflush(stdout);
+	SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to allocate String.");
+	return NULL;
+      }
+      //printf("INF: family %i port %i addr %s\n", family, port, stAddr);
 
-    stAddr = (char *)(*jenv)->GetStringUTFChars(jenv, addr, NULL);
-    if (stAddr == NULL) {
-      //printf("ERR: stAddr == NULL\n");
+      struct sockaddr_in6 *p = (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
+      p->sin6_family = family;
+      p->sin6_port = htons(port);
+      inet_pton(AF_INET6, stAddr, &(p->sin6_addr));
+
+      (*jenv)->ReleaseStringUTFChars(jenv, addr, stAddr);
+      //printf("INF: ~sockaddr_in6_create() %p\n", p);
       //fflush(stdout);
-      SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to allocate String.");
-      return;
+      return p;
+    } else {
+      printf("ERR: could not attach to thread.\n");
+      return NULL;
     }
-    //printf("INF: family %i port %i addr %s\n", family, port, stAddr);
-
-    struct sockaddr_in6 *p = (struct sockaddr_in6 *) malloc(sizeof(struct sockaddr_in6));
-    p->sin6_family = family;
-    p->sin6_port = htons(port);
-    inet_pton(AF_INET6, stAddr, &(p->sin6_addr));
-
-    (*jenv)->ReleaseStringUTFChars(jenv, addr, stAddr);
-    //printf("INF: ~sockaddr_in6_create() %p\n", p);
-    //fflush(stdout);
-    return p;
   }
 
   jstring get_addr(struct sockaddr_in6 src) {
@@ -501,17 +925,22 @@ signed
     //printf("INF: get_addr()\n");
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+    if (ret >= 0) {
+      if ( inet_ntop(src.sin6_family, &src.sin6_addr, cAddr, INET6_ADDRSTRLEN) == 0 ) {
+	//printf("INF: get_addr() inet_ntop fail\n");
+	SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to do address conversion.");
+      } else {
+	//printf("INF: get_addr() inet_ntop success\n");
+      }
 
-    if ( inet_ntop(src.sin6_family, &src.sin6_addr, cAddr, INET6_ADDRSTRLEN) == 0 ) {
-      //printf("INF: get_addr() inet_ntop fail\n");
-      SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Not able to do address conversion.");
+      jstring stAddr = (*jenv)->NewStringUTF(jenv, cAddr);
+
+      return stAddr;
     } else {
-      //printf("INF: get_addr() inet_ntop success\n");
+      printf("ERR: could not attach to thread.\n");
+      return NULL;
     }
-
-    jstring stAddr = (*jenv)->NewStringUTF(jenv, cAddr);
-
-    return stAddr;
   }
 
   jint get_port(struct sockaddr_in6 src) {
@@ -533,13 +962,29 @@ signed
   }
   %}
 
-void register_message_handler(coap_context_t *ctx, jobject client_server);
-void deregister_message_handler(coap_context_t *ctx, jobject client_server);
+
+//server
+void register_handler(coap_resource_t *r, unsigned char method , jobject client_server);
+
+coap_context_t *get_context(const char *node, const char *port);
+
+//client
+void register_response_handler(coap_context_t *ctx, jobject client_server);
+void deregister_response_handler(coap_context_t *ctx, jobject client_server);
+
+int resolve_address(const str *server, struct sockaddr *dst);
+
+
+str set_str_s(str strobj, jstring jstr, jint len);
+//str* create_str(jstring jstr, int jstrlen);
+//int htons(int port);
+
 struct sockaddr_in6 *sockaddr_in6_create(int family, int port, jstring addr);
 jstring get_addr(struct sockaddr_in6 src);
 jint get_port(struct sockaddr_in6 src);
 jbyteArray get_bytes(coap_pdu_t pdu);
-void coap_read(coap_context_t *ctx, struct sockaddr_in6 src, jbyteArray receivedData, int length);
+//void coap_read(coap_context_t *ctx);
+//void coap_read(coap_context_t *ctx, struct sockaddr_in6 src, jbyteArray receivedData, int length);
 void sockaddr_in6_free(struct sockaddr_in6 *p);
 void coap_send_impl(coap_context_t *ctx, const struct sockaddr_in6 *dst, coap_pdu_t *pdu, int free_pdu);
 
