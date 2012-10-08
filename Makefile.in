@@ -255,9 +255,7 @@ java: $(SRCS)
 	$(CC) -c $(CCSHARED) $(CFLAGS) -DJAVA $(JAVACFLAGS) $(SRCS) swig/java/$(ISRCS) $(INCLUDES) $(JAVA_INCLUDE)
 	$(JAVALDSHARED) $(CFLAGS) $(OBJS) $(IOBJS) $(JAVA_DLNK) $(LIBS) -o swig/java/$(JAVA_LIBPREFIX)$(TARGET)$(JAVASO)
 	@JAVAC@ -sourcepath ./swig/java/ -d ./swig/java swig/java/de/tzi/coap/jni/*.java;
-	#jar cvf examples/java/jnicoap.jar -C swig/java/de/tzi/coap/jni/ .
-	#jar cvf examples/java/jnicoap.jar -C swig/java  .
-	cd swig/java/; jar cvf ../../examples/java/jnicoap.jar de/tzi/coap/jni/*.class; cd ../../
+	cd swig/java/; jar cvf jnicoap.jar de/tzi/coap/jni/*.class; cd ../../
 
 	#jar cvf examples/java/jnicoap.jar -C swig/java  swig/java/de/tzi/coap/jni/*.class
 	cp examples/java/jnicoap.jar AndroidCoAP/libs/

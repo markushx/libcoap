@@ -5,9 +5,12 @@ autoconf
 make
 
 For the Java SWIG/JNI CoAP:
+export ANDROID_NDK_DIR=~/src/external/android_sdk/android-ndk-r6/
+#export JAVA_HOME=/usr/lib/jvm/java-6-sun
+make java
 
-export JAVA_HOME=/usr/lib/jvm/java-6-sun
-make javaclient
+
+make javaclient	
 make javaserver
 
 make runjavaclient
