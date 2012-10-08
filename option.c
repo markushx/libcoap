@@ -14,6 +14,8 @@
 # include <assert.h>
 #endif
 
+#include <string.h>
+
 #include <stdio.h>
 
 #include "option.h"

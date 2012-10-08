@@ -6,6 +6,8 @@
  * README for terms of use. 
  */
 
+#include <stdio.h>
+
 #include "hashkey.h"
 
 /* Caution: When changing this, update COAP_DEFAULT_WKC_HASHKEY

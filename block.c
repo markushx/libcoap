@@ -12,6 +12,8 @@
 # include <assert.h>
 #endif
 
+#include <string.h>
+
 #include "debug.h"
 #include "block.h"
 
