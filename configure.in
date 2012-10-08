@@ -84,7 +84,11 @@ AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
 
 # Checks for library functions.
-AC_FUNC_MALLOC
+# not for android:
+AS_IF([test "x$with_swig" != xyes],
+            [
+	    AC_FUNC_MALLOC
+	])
 AC_CHECK_FUNCS([memset select socket strcasecmp strrchr getaddrinfo strnlen])
 
 AC_CONFIG_HEADERS([config.h])
