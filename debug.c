@@ -17,6 +17,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifdef ANDROID
+#include <android/log.h>
+#endif
+
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
 #endif
@@ -37,7 +41,7 @@
 
 static coap_log_t maxlog = LOG_WARN;	/* default maximum log level */
 
-coap_log_t 
+coap_log_t
 coap_get_log_level() {
   return maxlog;
 }
@@ -293,6 +297,16 @@ coap_show_pdu(const coap_pdu_t *pdu) {
 #endif /* NDEBUG */
 
 #ifndef WITH_CONTIKI
+#ifdef ANDROID
+void
+coap_log_impl(coap_log_t level, const char *format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  __android_log_print(ANDROID_LOG_DEBUG, "libcoap",
+		      format, ap);
+  va_end(ap);
+}
+#else
 void 
 coap_log_impl(coap_log_t level, const char *format, ...) {
   char timebuf[32];
@@ -317,6 +331,7 @@ coap_log_impl(coap_log_t level, const char *format, ...) {
   va_end(ap);
   fflush(log_fd);
 }
+#endif /* ANDROID */
 #else /* WITH_CONTIKI */
 void 
 coap_log_impl(coap_log_t level, const char *format, ...) {

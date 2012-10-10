@@ -1,9 +1,10 @@
-package de.tzi.coap;
+package de.tzi.coap08;
 
+import de.tzi.coap08.R;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
+//import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;

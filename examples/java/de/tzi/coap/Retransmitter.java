@@ -1,4 +1,4 @@
-package de.tzi.coap;
+package de.tzi.coap08;
 
 import java.io.IOException;
 

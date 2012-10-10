@@ -1,30 +1,28 @@
-package de.tzi.coap;
+package de.tzi.coap08;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 
 import android.util.Log;
 
 import de.tzi.coap.jni.coap;
-import de.tzi.coap.jni.coapConstants;
 import de.tzi.coap.jni.coap_context_t;
-import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
+import de.tzi.coap.jni.coap_queue_t;
 
-public class LowerReceive extends Thread {
+public class CheckThread extends Thread {
 	boolean doStop = false;
 	coap_context_t ctx;
-	DatagramSocket clientSocket;
+    coap_queue_t nextpdu;
+	
+    int mainLoopSleepTimeMilli = 50;
 
-	public LowerReceive(coap_context_t ctx, DatagramSocket clientSocket) {
+	public CheckThread(coap_context_t ctx) {
 		this.ctx = ctx;
-		this.clientSocket = clientSocket;
 	}
 
 	public void run() {
 		Log.i(CoAPClient.LOG_TAG, "INF: LowerRequest run()");
 		try {
-			receiveLoop();
+			loop();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -35,22 +33,35 @@ public class LowerReceive extends Thread {
 		doStop = true;
 	}
 
-	private void receiveLoop() throws IOException {
-		SWIGTYPE_p_sockaddr_in6 src;
-		byte[] receiveData = new byte[coapConstants.COAP_MAX_PDU_SIZE];
-		DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+	private void checkRetransmit() {
+		//System.out.print("r");
+		nextpdu = coap.coap_peek_next(ctx);
+
+		if (nextpdu != null) {
+			//System.out.println("R cond " + nextpdu.getT() + "," + System.currentTimeMillis()/1000 );
+			if (nextpdu.getT() <= System.currentTimeMillis()/1000) {
+				System.out.println("INF: CoAP retransmission");
+				coap.coap_retransmit( ctx, coap.coap_pop_next( ctx ) );
+			}
+		}
+	}
+
+	private void checkReceiveTraffic() {
+		coap.coap_read(ctx);
+		coap.coap_dispatch(ctx);
+	}
+
+	private void loop() throws IOException {
 		while (!doStop) {
-			Log.i(CoAPClient.LOG_TAG, "INF: LowerRequest: waiting for incoming message...");
-			clientSocket.receive(receivePacket);
 
-			src = coap.sockaddr_in6_create(coapConstants.AF_INET6, receivePacket.getPort(),
-					receivePacket.getAddress().getHostAddress());
-
-			coap.coap_read(ctx, src, receivePacket.getData(), receivePacket.getLength());
-			coap.coap_dispatch(ctx);
-
+			Log.i(CoAPClient.LOG_TAG, ".");
+			checkReceiveTraffic();
+			Log.i(CoAPClient.LOG_TAG, "#");
+			checkRetransmit();
+			Log.i(CoAPClient.LOG_TAG, "*");
+			
 			try {
-				Thread.sleep(20);
+				Thread.sleep(mainLoopSleepTimeMilli);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

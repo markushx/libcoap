@@ -26,6 +26,8 @@
 #include <arpa/inet.h>
 #endif
 
+#include <errno.h>
+
 #include "debug.h"
 #include "mem.h"
 #include "str.h"
@@ -423,7 +425,7 @@ coap_send_impl(coap_context_t *context,
 			  &dst->addr.sa, dst->size);
 
   if (bytes_written >= 0) {
-  coap_log(LOG_DEBUG, "coap_send: sendto done\n");
+    coap_log(LOG_DEBUG, "coap_send: sendto done\n");
     coap_transaction_id(dst, pdu, &id);
   } else {
     coap_log(LOG_CRIT, "coap_send: sendto\n");

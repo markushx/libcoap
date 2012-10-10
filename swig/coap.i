@@ -93,6 +93,7 @@ jstring,
 %apply int { coap_tid_t };
 %apply long { time_t };
 %ignore coap_get_data;
+%ignore coap_print_addr;
 
 %{
   // libcoap
@@ -105,6 +106,10 @@ jstring,
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+  //#include <stdio.h>
+#ifdef ANDROID
+#include <android/log.h>
+#endif
 
 int coap_get_data_java(coap_pdu_t *pdu, unsigned char *data) {
   int len = 0;
@@ -165,14 +170,14 @@ signed
 
   /* cache jvm */
   JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void *reserved) {
-    //printf("INF: JNI_OnLoad\n");
+    coap_log(LOG_DEBUG, "JNI_OnLoad\n");
 
     /* caching JVM */
     cached_jvm = jvm;
 
     /* get environment */
     if ((*jvm)->GetEnv(jvm, (void **)&jenv, JNI_VERSION_1_4)) {
-      //printf("ERR: JNI verson not supported \n");
+      coap_log(LOG_CRIT, "JNI verson not supported \n");
       //fflush(stdout);
       return JNI_ERR;
     }
@@ -182,7 +187,7 @@ signed
   }
 
   JNIEXPORT void JNICALL JNI_OnUnLoad(JavaVM *jvm, void *reserved) {
-    //printf("INF: JNI_OnUnLoad\n" );
+    coap_log(LOG_DEBUG, "JNI_OnUnLoad\n" );
     //fflush(stdout);
     return;
   }
@@ -195,9 +200,7 @@ signed
 						coap_pdu_t *sent,
 						coap_pdu_t *received,
 						const coap_tid_t tid) {
-
-    printf("INF: response_handler_proxy()\n");
-    //printf("INF: ctx %p, node %p, data %p\n", ctx, node, data);
+    coap_log(LOG_DEBUG, "response_handler_proxy()\n");
 
     //printf("--------------------------\n");
     //coap_show_pdu( node->pdu );
@@ -231,25 +234,29 @@ signed
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
+#ifdef ANDROID
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
+#else
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+#endif
     if (ret >= 0) {
 
       //TODO: handle null pointers.
-      printf("INF: ctx\n");
+      coap_log(LOG_DEBUG, "ctx\n");
       ctx_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_context_t");
       ctx_con = (*jenv)->GetMethodID(jenv, ctx_cls, "<init>", "(JZ)V");
       ctx_fid = (*jenv)->GetFieldID(jenv, ctx_cls, "swigCPtr", "J");
       *((coap_context_t **)&jctx) = (coap_context_t *) ctx;
       ctx_obj = (*jenv)->NewObject(jenv, ctx_cls, ctx_con, jctx, NULL);
 
-      printf("INF: remote\n");
+      coap_log(LOG_DEBUG, "remote\n");
       remote_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/__coap_address_t");
       remote_con = (*jenv)->GetMethodID(jenv, remote_cls, "<init>", "(JZ)V");
       remote_fid = (*jenv)->GetFieldID(jenv, remote_cls, "swigCPtr", "J");
       *((coap_address_t **)&jremote) = (coap_address_t *) remote;
       remote_obj = (*jenv)->NewObject(jenv, remote_cls, remote_con, jremote, NULL);
 
-      printf("INF: pdu\n");
+      coap_log(LOG_DEBUG, "pdu\n");
       pdu_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_pdu_t");
       pdu_con = (*jenv)->GetMethodID(jenv, pdu_cls, "<init>", "(JZ)V");
       pdu_fid = (*jenv)->GetFieldID(jenv, pdu_cls, "swigCPtr", "J");
@@ -258,7 +265,7 @@ signed
       *((coap_pdu_t **)&jpdureceived) = (coap_pdu_t *) received;
       pdureceived_obj = (*jenv)->NewObject(jenv, pdu_cls, pdu_con, jpdureceived, NULL);
 
-      printf("INF: tid\n");
+      //printf("INF: tid\n");
       /*
       tid_cls = (*jenv)->FindClass(jenv, "I");
       //tid_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_tid_t");
@@ -274,23 +281,27 @@ signed
       id = (int)tid;
       jid = (jint)id;
 
-      /*
-      jint jid = id;
+      /*      jint jid = id;
       */
-      printf("INF: done\n");
+      //printf("INF: done\n");
 
       /* find Java Client/Server class */
       cls = (*jenv)->GetObjectClass(jenv, cached_client_server);
       if (cls == NULL) {
-	printf("ERR: Client/Server class not found.\n");
+	coap_log(LOG_CRIT, "Client/Server class not found.\n");
       }
 
       methodid = (*jenv)->GetMethodID(jenv, cls, "responseHandler",
-				      //"(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/__coap_address_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/coap_tid_t;)V");
-				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/__coap_address_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/coap_pdu_t;I)V");
+				      "("
+				      "Lde/tzi/coap/jni/coap_context_t;"
+				      "Lde/tzi/coap/jni/__coap_address_t;"
+				      "Lde/tzi/coap/jni/coap_pdu_t;"
+				      "Lde/tzi/coap/jni/coap_pdu_t;"
+				      "I)"
+				      "V");
 
       if (methodid == NULL) {
-	printf("ERR: messageHandler not found.\n");
+	coap_log(LOG_CRIT, "messageHandler not found.\n");
 	return;
       } else {
 	//printf("INF: messageHandler found.\n");
@@ -308,14 +319,14 @@ signed
 					pdusent_obj, pdureceived_obj, jid);
 
       if ((*jenv)->ExceptionOccurred(jenv)) {
-	//printf("ERR: Exception occurred.\n");
+	coap_log(LOG_CRIT, "Exception occurred.\n");
 	SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "Exception in callback.");
 	return;
       }
       //printf("INF: ~callback\n");
 
     } else {
-      printf("ERR: could not attach to thread.\n");
+      coap_log(LOG_CRIT, "could not attach to thread.\n");
     }
     //printf("INF: ~response_handler_proxy()\n");
     //fflush(stdout);
@@ -323,30 +334,38 @@ signed
 
   /* register response handler */
   void register_response_handler(coap_context_t *ctx, jobject client_server) {
-    //printf ("INF: register_response_handler(%p, %p)\n", ctx, client_server);
+    coap_log(LOG_DEBUG, "register_response_handler(%p, %p)\n", ctx, client_server);
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
+#ifdef ANDROID
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
+#else
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+#endif
     if (ret >= 0) {
       cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
       coap_register_response_handler(ctx, response_handler_proxy);
     } else {
-      printf("ERR: could not attach to thread.\n");
+      //printf("ERR: could not attach to thread.\n");
     }
     //printf ("INF: ~register_response_handler()\n");
     //fflush(stdout);
   }
 
   void deregister_response_handler(coap_context_t *ctx, jobject client_server) {
-    //printf ("INF: deregister_response_handler(%p, %p)\n", ctx, client_server);
+    coap_log(LOG_DEBUG, "deregister_response_handler(%p, %p)\n", ctx, client_server);
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
+#ifdef ANDROID
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
+#else
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+#endif
     if (ret >= 0) {
       (*jenv)->DeleteGlobalRef(jenv, client_server);
     } else {
-      printf("ERR: could not attach to thread.\n");
+      coap_log(LOG_CRIT, "could not attach to thread.\n");
     }
     //printf ("INF: ~deregister_response_handler()\n");
     //fflush(stdout);
@@ -361,8 +380,8 @@ signed
 				       coap_pdu_t *request,
 				       str* token,
 				       coap_pdu_t *response) {
-    //printf("INF: handler_proxy()\n");
-    //printf("INF: ctx %p\n", ctx);
+    coap_log(LOG_DEBUG, "handler_proxy()\n");
+    coap_log(LOG_DEBUG, "ctx %p\n", ctx);
 
     //printf("--------------------------\n");
     //coap_show_pdu( node->pdu );
@@ -402,33 +421,37 @@ signed
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
+#ifdef ANDROID
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
+#else
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+#endif
     if (ret >= 0) {
 
       //printf("INF: figuring out java objects\n");
       //TODO: handle null pointers.
-      //printf("INF: context\n");
+      coap_log(LOG_DEBUG, "context\n");
       ctx_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_context_t");
       ctx_con = (*jenv)->GetMethodID(jenv, ctx_cls, "<init>", "(JZ)V");
       ctx_fid = (*jenv)->GetFieldID(jenv, ctx_cls, "swigCPtr", "J");
       *((coap_context_t **)&jctx) = (coap_context_t *) ctx;
       ctx_obj = (*jenv)->NewObject(jenv, ctx_cls, ctx_con, jctx, NULL);
 
-      //printf("INF: resource\n");
+      coap_log(LOG_DEBUG, "resource\n");
       resource_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_resource_t");
       resource_con = (*jenv)->GetMethodID(jenv, ctx_cls, "<init>", "(JZ)V");
       resource_fid = (*jenv)->GetFieldID(jenv, ctx_cls, "swigCPtr", "J");
       *((coap_resource_t **)&jresource) = (coap_resource_t *) resource;
       resource_obj = (*jenv)->NewObject(jenv, resource_cls, resource_con, jresource, NULL);
 
-      //printf("INF: peer\n");
+      coap_log(LOG_DEBUG, "peer\n");
       peer_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/__coap_address_t");
       peer_con = (*jenv)->GetMethodID(jenv, peer_cls, "<init>", "(JZ)V");
       peer_fid = (*jenv)->GetFieldID(jenv, peer_cls, "swigCPtr", "J");
       *((coap_address_t **)&jpeer) = (coap_address_t *) peer;
       peer_obj = (*jenv)->NewObject(jenv, peer_cls, peer_con, jpeer, NULL);
 
-      //printf("INF: pdus\n");
+      coap_log(LOG_DEBUG, "pdus\n");
       pdu_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/coap_pdu_t");
       pdu_con = (*jenv)->GetMethodID(jenv, pdu_cls, "<init>", "(JZ)V");
       pdu_fid = (*jenv)->GetFieldID(jenv, pdu_cls, "swigCPtr", "J");
@@ -437,29 +460,36 @@ signed
       *((coap_pdu_t **)&jresponse) = (coap_pdu_t *) response;
       response_obj = (*jenv)->NewObject(jenv, pdu_cls, pdu_con, jresponse, NULL);
 
-      //printf("INF: token\n");
+      coap_log(LOG_DEBUG, "token\n");
       token_cls = (*jenv)->FindClass(jenv, "de/tzi/coap/jni/str");
       token_con = (*jenv)->GetMethodID(jenv, token_cls, "<init>", "(JZ)V");
       token_fid = (*jenv)->GetFieldID(jenv, token_cls, "swigCPtr", "J");
       *((str **)&token) = (str *) token;
       token_obj = (*jenv)->NewObject(jenv, token_cls, token_con, jtoken, NULL);
 
-      //printf("INF: figured out java objects\n");
+      coap_log(LOG_DEBUG, "figured out java objects\n");
 
       /* find Java Client/Server class */
       cls = (*jenv)->GetObjectClass(jenv, cached_client_server);
       if (cls == NULL) {
-	printf("ERR: Client/Server class not found.\n");
+	coap_log(LOG_CRIT, "Client/Server class not found.\n");
       }
 
       methodid = (*jenv)->GetMethodID(jenv, cls, "handler",
-				      "(Lde/tzi/coap/jni/coap_context_t;Lde/tzi/coap/jni/coap_resource_t;Lde/tzi/coap/jni/__coap_address_t;Lde/tzi/coap/jni/coap_pdu_t;Lde/tzi/coap/jni/str;Lde/tzi/coap/jni/coap_pdu_t;)V");
+				      "("
+				      "Lde/tzi/coap/jni/coap_context_t;"
+				      "Lde/tzi/coap/jni/coap_resource_t;"
+				      "Lde/tzi/coap/jni/__coap_address_t;"
+				      "Lde/tzi/coap/jni/coap_pdu_t;"
+				      "Lde/tzi/coap/jni/str;"
+				      "Lde/tzi/coap/jni/coap_pdu_t;"
+				      ")V");
 
       if (methodid == NULL) {
-	printf("ERR: Java handler not found.\n");
+	coap_log(LOG_CRIT, "Java handler not found.\n");
 	return;
       } else {
-	//printf("INF: messageHandler found.\n");
+	coap_log(LOG_DEBUG, "messageHandler found.\n");
       }
 
       //printf("INF: callback into Java %p\n", methodid);
@@ -469,31 +499,35 @@ signed
 					request_obj, token_obj, response_obj);
 
       if ((*jenv)->ExceptionOccurred(jenv)) {
-	printf("ERR: Exception occurred.\n");
+	coap_log(LOG_CRIT, "Exception occurred.\n");
 	SWIG_JavaThrowException(jenv, SWIG_JavaRuntimeException, "Exception in callback.");
 	return;
       }
       //printf("INF: ~callback\n");
 
     } else {
-      printf("ERR: could not attach to thread.\n");
+      coap_log(LOG_CRIT, "could not attach to thread.\n");
     }
     //printf("INF: ~response_handler_proxy()\n");
-    fflush(stdout);
+    //fflush(stdout);
   }
 
   /* register handler */
-  void register_handler(coap_resource_t *r, unsigned char method , jobject client_server) {
-    //printf ("INF: register_response_handler(%p, %p)\n", ctx, client_server);
+  void register_handler(coap_resource_t *r, unsigned char method, jobject client_server) {
+    coap_log(LOG_DEBUG, "register_handler(%p, %p)\n", r, client_server);
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
 
+#ifdef ANDROID
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
+#else
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+#endif
     if (ret >= 0) {
       cached_client_server = (*jenv)->NewGlobalRef(jenv, client_server);
       coap_register_handler(r, method, (coap_method_handler_t)handler_proxy);
     } else {
-      printf("ERR: could not attach to thread.\n");
+      coap_log(LOG_CRIT, "could not attach to thread.\n");
     }
     //printf ("INF: ~register_response_handler()\n");
     //fflush(stdout);
@@ -640,7 +674,7 @@ coap_context_t *
 
     s = getaddrinfo(node, port, &hints, &result);
     if ( s != 0 ) {
-      fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+      //fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
       return NULL;
     }
 
@@ -661,10 +695,10 @@ coap_context_t *
       }
     }
 
-    fprintf(stderr, "no context available for interface '%s'\n", node);
+    //fprintf(stderr, "no context available for interface '%s'\n", node);
 
   finish:
-    fprintf(stdout, "get_context~\n");
+    //fprintf(stdout, "get_context~\n");
     freeaddrinfo(result);
     return ctx;
   }
@@ -683,25 +717,25 @@ resolve_address(const str *server, struct sockaddr *dst) {
   else
     memcpy(addrstr, "localhost", 9);
 
-  fprintf(stderr, "getaddrinfo: %p '%s'\n", server->s, server->s);
-  fprintf(stderr, "getaddrinfo: len %u\n", server->length);
+  //fprintf(stderr, "getaddrinfo: %p '%s'\n", server->s, server->s);
+  //fprintf(stderr, "getaddrinfo: len %u\n", server->length);
 
   memset ((char *)&hints, 0, sizeof(hints));
   hints.ai_socktype = SOCK_DGRAM;
   hints.ai_family = AF_UNSPEC;
 
-  fprintf(stderr, "res_add1\n");
+  //fprintf(stderr, "res_add1\n");
 
   error = getaddrinfo(addrstr, "", &hints, &res);
 
-  fprintf(stderr, "res_add2\n");
+  //fprintf(stderr, "res_add2\n");
 
   if (error != 0) {
-    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(error));
+    //fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(error));
     return error;
   }
 
-  fprintf(stderr, "res_add3\n");
+  //fprintf(stderr, "res_add3\n");
 
   for (ainfo = res; ainfo != NULL; ainfo = ainfo->ai_next) {
     switch (ainfo->ai_family) {
@@ -715,13 +749,13 @@ resolve_address(const str *server, struct sockaddr *dst) {
     }
   }
 
-  fprintf(stderr, "res_add4\n");
+  //fprintf(stderr, "res_add4\n");
 
  finish:
-  fprintf(stderr, "res_add5\n");
+  //fprintf(stderr, "res_add5\n");
 
   freeaddrinfo(res);
-  fprintf(stderr, "res_add6, %u\n", len);
+  //fprintf(stderr, "res_add6, %u\n", len);
 
   return len;
 }
@@ -833,18 +867,22 @@ resolve_address(const str *server, struct sockaddr *dst) {
    //char *coap_char = coap_malloc(strobj.length+1);
 
    (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+#ifdef ANDROID
+   int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
+#else
    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+#endif
    if (ret >= 0) {
-     printf("INF: str1\n");
+     //printf("INF: str1\n");
      memcpy(strobj.s, (char *)(*jenv)->GetStringUTFChars(jenv, jstr, NULL), len);
-     printf("INF: str2\n");
+     //printf("INF: str2\n");
      memset(strobj.s + len, 0, 1);
-     printf("INF: str3\n");
+     //printf("INF: str3\n");
      strobj.length = len;
-     printf("INF: str '%s'\n", strobj.s);
+     //printf("INF: str '%s'\n", strobj.s);
      return strobj;
    } else {
-     printf("ERR: could not attach to thread.\n");
+     //printf("ERR: could not attach to thread.\n");
      return ;
      //Exception?
    }
@@ -854,29 +892,33 @@ resolve_address(const str *server, struct sockaddr *dst) {
     char *coap_char;
     str* coap_str = coap_malloc(sizeof(str));//{ 0, NULL };
 
-    fprintf(stderr, "create_str");
+    //fprintf(stderr, "create_str");
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+#ifdef ANDROID
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
+#else
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+#endif
     if (ret >= 0) {
-      fprintf(stderr, "create_str1\n");
+      //fprintf(stderr, "create_str1\n");
       coap_char = (char *)(*jenv)->GetStringUTFChars(jenv, jstr, NULL);
 
-      fprintf(stderr, "create_str2\n");
+      //fprintf(stderr, "create_str2\n");
       coap_str->length = jstrlen;
-      fprintf(stderr, "create_str3\n");
+      //fprintf(stderr, "create_str3\n");
       coap_str->s = (unsigned char *)coap_malloc(coap_str->length + 1);
-      fprintf(stderr, "create_str4\n");
+      //fprintf(stderr, "create_str4\n");
 
       //memcpy(coap_str->s, jstr, coap_str->length + 1);
       memcpy(coap_str->s, coap_char, coap_str->length);
-      fprintf(stderr, "create_str5\n");
+      //fprintf(stderr, "create_str5\n");
       memset(coap_str->s + coap_str->length, 0, 1);
-      fprintf(stderr, "create_str6\n");
+      //fprintf(stderr, "create_str6\n");
 
       return coap_str;
     } else {
-      printf("ERR: could not attach to thread.\n");
+      //printf("ERR: could not attach to thread.\n");
       return NULL;
     }
   }
@@ -894,7 +936,11 @@ resolve_address(const str *server, struct sockaddr *dst) {
     //printf("INF: sockaddr_in6_create()\n");
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+#ifdef ANDROID
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
+#else
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+#endif
     if (ret >= 0) {
       stAddr = (char *)(*jenv)->GetStringUTFChars(jenv, addr, NULL);
       if (stAddr == NULL) {
@@ -915,7 +961,7 @@ resolve_address(const str *server, struct sockaddr *dst) {
       //fflush(stdout);
       return p;
     } else {
-      printf("ERR: could not attach to thread.\n");
+      //printf("ERR: could not attach to thread.\n");
       return NULL;
     }
   }
@@ -925,7 +971,11 @@ resolve_address(const str *server, struct sockaddr *dst) {
     //printf("INF: get_addr()\n");
 
     (*cached_jvm)->GetEnv(cached_jvm, (void **)&jenv, JNI_VERSION_1_4);
+#ifdef ANDROID
+    int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, &jenv, NULL);
+#else
     int ret = (*cached_jvm)->AttachCurrentThread(cached_jvm, (void **)&jenv, NULL);
+#endif
     if (ret >= 0) {
       if ( inet_ntop(src.sin6_family, &src.sin6_addr, cAddr, INET6_ADDRSTRLEN) == 0 ) {
 	//printf("INF: get_addr() inet_ntop fail\n");
@@ -938,7 +988,7 @@ resolve_address(const str *server, struct sockaddr *dst) {
 
       return stAddr;
     } else {
-      printf("ERR: could not attach to thread.\n");
+      //printf("ERR: could not attach to thread.\n");
       return NULL;
     }
   }

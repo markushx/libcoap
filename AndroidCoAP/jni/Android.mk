@@ -20,16 +20,17 @@ include $(CLEAR_VARS)
 #LOCAL_C_INCLUDES      := $(TARGET_C_INCLUDES)/linux $(TARGET_C_INCLUDES)/sys
 #LOCAL_EXPORT_CFLAGS   := -NDEBUG=1
 
-LOCAL_CFLAGS          := -DJAVA
+LOCAL_CFLAGS          := -DJAVA -DANDROID
 #LOCAL_CFLAGS          := -nostdlib -DANDROID_NDK
 # -fno-short-wchar -fno-strength-reduce -fno-strict-aliasing
 # -fshort-wchar -Wno-multichar -D_ANDROID
 #LOCAL_LDLIBS          := -lc -llog
+LOCAL_LDLIBS := -llog
 
 LOCAL_MODULE          := coap
 #LOCAL_MODULE_FILENAME := libcoap
 
-LOCAL_SRC_FILES       := pdu.c net.c debug.c encode.c uri.c list.c subscribe.c str.c coap_wrap.c
+LOCAL_SRC_FILES       := async.c block.c coap_list.c debug.c encode.c hashkey.c  net.c option.c pdu.c resource.c str.c subscribe.c uri.c coap_wrap.c
 
 APP_STL := gnustl_static
 

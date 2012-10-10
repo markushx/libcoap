@@ -1,4 +1,4 @@
-package de.tzi.coap;
+package de.tzi.coap08;
 public class CoapJavaOption
 {
   private short optionType;

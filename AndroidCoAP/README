@@ -1,10 +1,8 @@
 
-libcoap/$ export ANDROID_NDK_DIR=/home/mab/src/external/android_sdk/android-ndk-r6/
-libcoap/$ autoconf
-libcoap/$ ./configure
-libcoap/$ make java_clean && make java
+libcoap/$ # FOLLOW README.SWIG
 libcoap/$ cd AndroidCoAP
 
-AndroidCoAP/$ $ANDROID_NDK_DIR/ndk-build
+AndroidCoAP/$ $NDK/ndk-build
+AndroidCoAP/$ cp ../swig/java/jnicoap.jar ./libs/jnicoap.jar
 
 -> eclipse

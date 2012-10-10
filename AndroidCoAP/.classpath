@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
+	<classpathentry excluding="de/tzi/coap/CoAPServer.java|de/tzi/coap/Retransmitter.java|de/tzi/coap/sms/|de/tzi/coap08/CoAPServer.java|de/tzi/coap08/Retransmitter.java|de/tzi/coap08/sms/" kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
