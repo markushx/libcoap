@@ -1044,8 +1044,6 @@ public class CoAPClient extends Activity {
 	}
 
 	private void handleSt(ResourceSt val) {
-		int temp_val = val.getTemp();
-
 		if (continuous.isChecked()) {
 			JSONArray result = new JSONArray();
 
@@ -1055,7 +1053,7 @@ public class CoAPClient extends Activity {
 			try {
 				entryTemp.put(diff / 1000);
 
-				entryTemp.put((float) (temp_val / 100 - 273.15));
+				entryTemp.put( ((float)val.getTemp())/100 - 273.15);
 				dataTemp.put(entryTemp);
 				//temp.putOpt("label", "&nbsp;Temperature <br> &nbsp;("+temp_val+" degC)");
 				temp.put("data", dataTemp);
@@ -1109,7 +1107,7 @@ public class CoAPClient extends Activity {
 					
 					Log.i(LOG_TAG, "INF: T: " + (((float)val.getTemp())/100 - 273.15));
 					
-					String t_str = String.format( "%.2f", ((float)val.getTemp())/100 - 273.15); 
+					String t_str = String.format( "%.2f", ((float)val.getTemp())/100 - 273.15);
 					responseTextView.append("T:"+ t_str + "\n");
 					//responseTextView.append("T:"+ roundTwoDecimals((float)val.getTemp()/100 - 273.15)
 					//		+ "\n");
