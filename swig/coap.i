@@ -94,6 +94,7 @@ jstring,
 %apply long { time_t };
 %ignore coap_get_data;
 %ignore coap_print_addr;
+%ignore COAP_DEFAULT_WKC_HASHKEY;
 
 %{
   // libcoap
