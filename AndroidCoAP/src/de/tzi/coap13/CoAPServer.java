@@ -1,4 +1,4 @@
-package de.tzi.coap08;
+package de.tzi.coap13;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -45,11 +45,13 @@ import android.util.Log;
 import de.tzi.coap.jni.coap;
 import de.tzi.coap.jni.coapConstants;
 import de.tzi.coap.jni.coap_context_t;
+import de.tzi.coap.jni.coap_log_t;
 import de.tzi.coap.jni.coap_pdu_t;
-import de.tzi.coap.jni.coap_listnode;
+import de.tzi.coap.jni.coap_queue_t;
 import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
 import de.tzi.coap.jni.coap_uri_t;
-import de.tzi.coap.sms.CoAPSMSReceiver;
+
+import de.tzi.coap13.sms.CoAPSMSReceiver;
 
 /**
  * Sample implementation of a CoAP server for Android using SWIGified libcoap.
@@ -100,7 +102,7 @@ public class CoAPServer extends Activity {
 
 	// IP
 	DatagramSocket serverSocket;
-	LowerReceive lr = null;
+	//LowerReceive lr = null;
 	Retransmitter rt = null;
 	//RequesterThread reqthr = null;
 
@@ -213,8 +215,8 @@ public class CoAPServer extends Activity {
 						
 						responseTextView.setText("");
 						Log.d("CoAP", "start LowerReceive");
-						lr = new LowerReceive(ctx, serverSocket);
-						lr.start();
+						//lr = new LowerReceive(ctx, serverSocket);
+						//lr.start();
 						Log.d("CoAP", "LowerReceive started");
 						//rt = new Retransmitter(ctx);
 						//rt.start();
@@ -301,12 +303,12 @@ public class CoAPServer extends Activity {
 		Log.i(LOG_TAG, "INF: free context~");
 
 		Log.i(LOG_TAG, "INF: deregister message handler");
-		coap.deregister_message_handler(ctx, this);
+		coap.deregister_response_handler(ctx, this);
 		Log.i(LOG_TAG, "INF: deregistered message handler");
 
 		//stop all threads, just in case 
 		try {
-			lr.requestStop();
+			//lr.requestStop();
 			rt.requestStop();
 			//reqthr.requestStop();
 		} catch (NullPointerException e) {
@@ -433,23 +435,26 @@ public class CoAPServer extends Activity {
 	}
 
 	public void setup_coap(int port) {
+
+		coap.coap_set_log_level(coap_log_t.LOG_DEBUG);
+		Log.d(LOG_TAG, "setup_coap()");
+
 		// create coap_context
 		Log.i(LOG_TAG, "INF: create context");
-		ctx = coap.coap_new_context(port);
+		ctx = coap.get_context("::", ""+port);
 		if (ctx == null) {
-			Log.e(LOG_TAG, "ERR: Could not create context");
+			System.out.println("Could not create context");
 			return;
-		} else {
-			Log.i(LOG_TAG, "INF: created context");
 		}
 
 		// register ourselves for message handling
 		Log.i(LOG_TAG, "INF: register message handler");
-		coap.register_message_handler(ctx, this);
+		coap.register_response_handler(ctx, this);
 		Log.i(LOG_TAG, "INF: registered message handler");
+
 		init_resources(ctx);
 	}
-
+	
 	/*
 	try {
 		ListNets ln = new ListNets();
@@ -951,7 +956,7 @@ public class CoAPServer extends Activity {
 		return bArr;
 	}
 	
-	coap_pdu_t handle_get(coap_context_t ctx, coap_listnode node) {
+	coap_pdu_t handle_get(coap_context_t ctx, coap_queue_t node) {
 		coap_pdu_t pdu = null;
 		coap_uri_t uri = coap.coap_new_uri(null, 0);
 		int code;
@@ -1143,15 +1148,15 @@ public class CoAPServer extends Activity {
 	}
 	
 	public void messageHandler(coap_context_t ctx,
-			coap_listnode node,
+			coap_queue_t node,
 			String data) {
 
 		Log.i(LOG_TAG, "INF: Java Server messageHandler()");
 
-		try {
+		/*try {
 			lr.requestStop();
 		} catch (NullPointerException e) {
-		}
+		}*/
 
 		//		System.out.println(LI+"INF: ****** pdu (" + node.getPdu().getLength()
 		//				+ " bytes)" + " v:" + node.getPdu().getHdr().getVersion()
@@ -1191,7 +1196,7 @@ public class CoAPServer extends Activity {
 			Log.i(LOG_TAG, "INF: DELETE");
 		} else {
 			Log.w(LOG_TAG, "WARN: unimplemented method");	
-			if (node.getPdu().getHdr().getCode() >= coapConstants.COAP_RESPONSE_100
+			if (node.getPdu().getHdr().getCode() >= coapConstants.COAP_RESPONSE_200
 					&& node.getPdu().getHdr().getType() == coapConstants.COAP_MESSAGE_CON) {
 				Log.w(LOG_TAG, "WARN: received error code for CONfirmable message");
 				pdu = new_rst(ctx, node, coapConstants.COAP_RESPONSE_500);
@@ -1210,7 +1215,7 @@ public class CoAPServer extends Activity {
 	}
 
 	// CoAP:
-	coap_pdu_t new_ack(coap_context_t ctx, coap_listnode node) {
+	coap_pdu_t new_ack(coap_context_t ctx, coap_queue_t node) {
 		coap_pdu_t pdu = coap.coap_new_pdu();
 
 		if (pdu != null) {
@@ -1222,7 +1227,7 @@ public class CoAPServer extends Activity {
 		return pdu;
 	}
 	
-	coap_pdu_t new_rst(coap_context_t ctx, coap_listnode node, int code ) {
+	coap_pdu_t new_rst(coap_context_t ctx, coap_queue_t node, int code ) {
 		coap_pdu_t pdu = coap.coap_new_pdu();
 		if (pdu != null) {
 			pdu.getHdr().setType(coapConstants.COAP_MESSAGE_RST);
@@ -1232,7 +1237,7 @@ public class CoAPServer extends Activity {
 		return pdu;
 	}
 	
-	coap_pdu_t new_response(coap_context_t ctx, coap_listnode node, int code) {
+	coap_pdu_t new_response(coap_context_t ctx, coap_queue_t node, int code) {
 		coap_pdu_t pdu = new_ack(ctx, node);
 
 		if (pdu != null)
@@ -1296,7 +1301,7 @@ public class CoAPServer extends Activity {
 		tempFromPhoneNumber = fromPhoneNumber;
 		
 		Log.i(LOG_TAG, "INF: smsReceived " + ctx + " " + src + " " + b + " " + b.length);
-		coap.coap_read(ctx, src, b, b.length);
+		coap.coap_read_swig(ctx, src, b, b.length);
 		coap.coap_dispatch(ctx);
 	}
 }

@@ -1,4 +1,4 @@
-package de.tzi.coap.sms;
+package de.tzi.coap13.sms;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -7,8 +7,8 @@ import android.os.Bundle;
 import android.telephony.SmsMessage;
 import android.util.Base64;
 import android.util.Log;
-import de.tzi.coap.CoAPClient;
-import de.tzi.coap.CoAPServer;
+import de.tzi.coap13.CoAPClient;
+import de.tzi.coap13.CoAPServer;
 
 public class CoAPSMSReceiver extends BroadcastReceiver {
 

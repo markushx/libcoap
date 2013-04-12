@@ -1,10 +1,9 @@
-package de.tzi.coap08;
+package de.tzi.coap13;
 
 //import java.io.IOException;
 //import java.net.*;
 import java.text.DecimalFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Random;
 //import java.util.Set;
 //import java.util.TreeSet;
@@ -14,6 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -57,8 +57,9 @@ import android.widget.Toast;
 import android.text.format.DateFormat;
 //import android.util.Base64;
 import android.util.Log;
+import android.util.SparseArray;
 
-import de.tzi.coap08.R;
+import de.tzi.coap13.R;
 import de.tzi.coap.jni.coap;
 import de.tzi.coap.jni.coapConstants;
 import de.tzi.coap.jni.coap_context_t;
@@ -78,12 +79,13 @@ import de.tzi.coap.jni.SWIGTYPE_p_sockaddr_in6;
  * @author Thomas Poetsch <thp@comnets.uni-bremen.de>
  */
 
+@SuppressLint("SetJavaScriptEnabled")
 public class CoAPClient extends Activity {
 
 	public static final String LOG_TAG = "CoAPClient";
 	public Boolean isTablet = false;
 
-	HashMap<Integer, String> uriHM = new HashMap<Integer, String>(); 
+	SparseArray<String> uriHM = new SparseArray<String>();
 
 	public static final String PREFS_NAME = "MyCoapPrefs";
 	static final int ABOUT_DIALOG = 0;
@@ -135,8 +137,6 @@ public class CoAPClient extends Activity {
 
 	PowerManager.WakeLock wl;
 
-	FlotGraphHandler mGraphHandler;
-
 	String uris [];	
 	private Date startDate;
 
@@ -155,6 +155,10 @@ public class CoAPClient extends Activity {
 	//BroadcastReceiver sentReceiver;
 	//BroadcastReceiver replyReceiver;
 
+	static private FlotGraphHandler mGraphHandler = null;
+	static private Handler statusUIHandlerReceived = null;
+	//static private Handler messageUIHandlerRetransmission = null;
+	
 	static {
 		try{
 			Log.i(LOG_TAG, "static load library");
@@ -191,7 +195,7 @@ public class CoAPClient extends Activity {
 		return pdu;
 	}
 
-	coap_pdu_t coap_new_request(int methodid, Vector<CoapJavaOption> optlist, String payload) {
+	coap_pdu_t coap_new_request(int methodid, String token, Vector<CoapJavaOption> optlist, String payload) {
 
 		coap_pdu_t pdu = coap.coap_new_pdu();
 		if (pdu == null) {
@@ -202,8 +206,10 @@ public class CoAPClient extends Activity {
 		System.out.println("INF: set header values");
 		pdu.getHdr().setVersion(coapConstants.COAP_DEFAULT_VERSION);
 		pdu.getHdr().setType(coapConstants.COAP_MESSAGE_CON);
+		pdu.getHdr().setToken_length(token.length());
 		pdu.getHdr().setCode(methodid);
 		pdu.getHdr().setId(generator.nextInt(0xFFFF));
+		coap.coap_add_token(pdu, token.length(), token);
 
 		for (int i=0; i<optlist.size(); i++) {
 			coap.coap_add_option(pdu, optlist.get(i).getType(), optlist.get(i).getLength(), optlist.get(i).getValue());
@@ -224,7 +230,7 @@ public class CoAPClient extends Activity {
 		Log.d("CoAP", "setup_coap()");
 
 		// create coap_context
-		System.out.println("INF: create context");
+		Log.d("CoAP", "INF: create context");
 		ctx = coap.get_context("::", ""+0/*coapConstants.COAP_DEFAULT_PORT*/);
 		if (ctx == null) {
 			System.out.println("Could not create context");
@@ -291,8 +297,9 @@ public class CoAPClient extends Activity {
 		Display display = getWindowManager().getDefaultDisplay(); 
 		int width = display.getWidth();
 
-		if (width > 700) {
-			this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+		if (width > 590) {
+			//this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+			this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 			isTablet = true;
 		} else {
 			this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -326,6 +333,27 @@ public class CoAPClient extends Activity {
 		wv = (WebView)findViewById(R.id.wv1);
 		//~ setup UI elements
 
+		//message handler to update UI thread for received messages
+		statusUIHandlerReceived = new Handler() {
+			public void handleMessage(Message msg) {
+				//setStatus("CoAP Error Response (code "+msg.obj+") received.");
+				setStatus(""+msg.obj);
+			}
+		};
+
+		//message handler to update UI thread for retransmissions
+		/*
+		 messageUIHand lerRetransmission = new Hand ler() {
+			public void handleMessage(Message msg) {
+				if (msg.arg1 < coapConstants.COAP_DEFAULT_MAX_RETRANSMIT) {
+					setStatus("Retransmission #"+msg.arg1);
+				} else {
+					setStatus("Request aborted... ");
+				}
+			}
+		};
+		*/
+		
 		setup_coap();
 
 		// GET/PUT -------
@@ -427,7 +455,7 @@ public class CoAPClient extends Activity {
 					// send pdu
 					coap.coap_send_confirmed(ctx, dst, pdu);
 					// 	handle retransmission, receive and dispatch
-					// -> will trigger messageHandler() callback
+					// -> will trigger messageH andler() callback
 					// coap.check_receive_client(ctx); //TODO: reenable
 */
 
@@ -566,10 +594,16 @@ public class CoAPClient extends Activity {
 		continuous.setOnCheckedChangeListener(cont_listener);
 
 		// --------
+		
 		SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 		ipText.setText(settings.getString("ip", this.getString(R.string.defaultIP)));
 		portText.setText(settings.getString("port", this.getString(R.string.defaultPort)));
 
+		// override with ip address from BIBA tool, if the intent has the extra ipv6address
+		if (this.getIntent().hasExtra("ipv6address")) {
+			ipText.setText(this.getIntent().getStringExtra("ipv6address"));			
+		}
+		
 		//setup UI for proper mode: SMS resp. IP 
 		if (settings.getInt("mode", MODE_IP) == MODE_IP) {
 			coap_sms_layout.setVisibility(View.GONE);
@@ -881,13 +915,14 @@ public class CoAPClient extends Activity {
 
 		//TODO: token is added, use this on receive path to differentiate?
 		String token = Integer.toHexString(generator.nextInt(0xFF)); 
-		CoapJavaOption tokenOption = new CoapJavaOption(coap.COAP_OPTION_TOKEN,
+		/*CoapJavaOption tokenOption = new CoapJavaOption(coap.COAP_OPTION_TOKEN,
 				token, token.length());
-		optionList.add(tokenOption);
+		optionList.add(tokenOption);*/
 
 		String payload = null;
 
 		coap_pdu_t pdu = coap_new_request(method,
+				token,
 				optionList,
 				payload);
 
@@ -1085,7 +1120,8 @@ public class CoAPClient extends Activity {
 				pdudata[i] = ((short[])msg.obj)[i];
 			}
 
-			if (!uriHM.isEmpty()) {
+			//if (!uriHM.isEmpty()) {
+			if (uriHM.size() != 0) {
 				//TODO: read content-type and decide with switch/case
 				if (uriHM.get(msg.arg1).equals("l")) {
 					responseTextView.append(""+(int)pdudata[0] + "\n");
@@ -1136,25 +1172,6 @@ public class CoAPClient extends Activity {
 			return 0.0f;
 		}
 	}
-
-	//message handler to update UI thread for received messages
-	public static Handler statusUIHandlerReceived = new Handler() {
-		public void handleMessage(Message msg) {
-			//setStatus("CoAP Error Response (code "+msg.obj+") received.");
-			setStatus(""+msg.obj);
-		}
-	};
-	
-	//message handler to update UI thread for retransmissions
-	public static Handler messageUIHandlerRetransmission = new Handler() {
-		public void handleMessage(Message msg) {
-			if (msg.arg1 < coapConstants.COAP_DEFAULT_MAX_RETRANSMIT) {
-				setStatus("Retransmission #"+msg.arg1);
-			} else {
-				setStatus("Request aborted... ");
-			}
-		}
-	};
 
 	protected void updateMeasurements(JSONArray... data) {
 		if (data != null && data.length > 0) {
@@ -1222,7 +1239,7 @@ public class CoAPClient extends Activity {
 		System.out.println("****** pdu (" + received.getLength() +  " bytes)"
 				+ " v:"  + received.getHdr().getVersion()
 				+ " t:"  + received.getHdr().getType()
-				+ " oc:" + received.getHdr().getOptcnt()
+//				+ " oc:" + received.getHdr().getOptcnt()
 				+ " c:"  + received.getHdr().getCode()
 				+ " id:" + received.getHdr().getId());
 
@@ -1344,7 +1361,7 @@ public class CoAPClient extends Activity {
 						+ "." + (received.getHdr().getCode() & 0x1F));
 
 				databuf = new short[received.getLength()];
-				int len = coap.coap_get_data_java(received, databuf);
+				/*int len = */coap.coap_get_data_java(received, databuf);
 				outputData(databuf);
 				
 				Message msg = statusUIHandlerReceived.obtainMessage();
@@ -1356,7 +1373,7 @@ public class CoAPClient extends Activity {
 
 		/* finally send new request, if needed */
 		if ((pdu != null) &&
-				coap.coap_send(ctx, remote, pdu) == coapConstants.COAP_INVALID_TID) {
+				(coap.coap_send(ctx, remote, pdu) == coapConstants.COAP_INVALID_TID)) {
 			System.out.println("DBG: response_handler: error sending response");
 		}
 		coap.coap_delete_pdu(pdu);
@@ -1452,7 +1469,6 @@ public class CoAPClient extends Activity {
 
 	
 	//TODO: mab re-enable SMS facility, goes with re-enable of the Java socket and coap_send_impl()
-	/*
 	public void smsReceived(byte[] b, String fromPhoneNo) {
 		// faking an IPv6 address to make libcoap happily match request and response
 		SWIGTYPE_p_sockaddr_in6 src;
@@ -1467,9 +1483,9 @@ public class CoAPClient extends Activity {
 				port,
 				ipText.getText().toString());
 
-		coap.coap_read(ctx, src, b, b.length);
+		coap.coap_read_swig(ctx, src, b, b.length);
 		coap.coap_dispatch(ctx);
 
 		//TODO: match fromPhoneNo to request?
-	}*/
+	}
 }

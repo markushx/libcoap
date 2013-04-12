@@ -1,6 +1,7 @@
-package de.tzi.coap08;
+package de.tzi.coap13;
 
-import de.tzi.coap08.R;
+import de.tzi.coap13.R;
+
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Bundle;

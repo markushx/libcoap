@@ -1,9 +1,9 @@
-package de.tzi.coap08;
+package de.tzi.coap13;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import de.tzi.coap08.R;
+import de.tzi.coap13.R;
 import android.content.Context;
 import android.util.Log;
 import android.webkit.WebView;
@@ -56,6 +56,7 @@ public class FlotGraphHandler {
 			options.put("points", getPointsOptionsJSON());
 			options.put("legend", getLegendsOptionsJSON());
 			options.put("grid", getGridOptionsJSON());
+			options.put("yaxis", getYaxisOptionsJSON());
 
 		} catch (JSONException e) {
 			Log.d(this.getClass().getSimpleName(),
@@ -100,5 +101,13 @@ public class FlotGraphHandler {
 		bgColorsOption.put("colors", bgColor);
 		gridOption.put("backgroundColor", bgColorsOption);
 		return gridOption;
+	}
+
+	private JSONObject getYaxisOptionsJSON() throws JSONException {
+		JSONObject axisOption = new JSONObject();
+		//axisOption.put("min", 10);
+		//axisOption.put("max", 30);
+		axisOption.put("autoscaleMargin", 3);
+		return axisOption;
 	}
 }

@@ -1,4 +1,4 @@
-package de.tzi.coap08;
+package de.tzi.coap13;
 
 import java.io.IOException;
 
@@ -8,7 +8,7 @@ import android.util.Log;
 import de.tzi.coap.jni.coap;
 import de.tzi.coap.jni.coapConstants;
 import de.tzi.coap.jni.coap_context_t;
-import de.tzi.coap.jni.coap_listnode;
+import de.tzi.coap.jni.coap_queue_t;
 
 public class Retransmitter extends Thread {
 	boolean doStop = false;
@@ -35,7 +35,7 @@ public class Retransmitter extends Thread {
 	}
 
 	private void retransmitLoop() throws IOException {
-		coap_listnode nextpdu;
+		coap_queue_t nextpdu;
 
 		//initial waiting time for first retransmit
 		try {
@@ -64,9 +64,9 @@ public class Retransmitter extends Thread {
 				doStop = true;
 			} else {
 
-				Message msg = CoAPClient.messageUIHandlerRetransmission.obtainMessage();
-				msg.arg1 = nextpdu.getRetransmit_cnt();
-				CoAPClient.messageUIHandlerRetransmission.sendMessage(msg);
+				//Message msg = CoAPClient.messageUIHandlerRetransmission.obtainMessage();
+				//msg.arg1 = nextpdu.getRetransmit_cnt();
+				//CoAPClient.messageUIHandlerRetransmission.sendMessage(msg);
 
 			}
 			

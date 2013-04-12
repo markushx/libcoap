@@ -762,107 +762,79 @@ resolve_address(const str *server, struct sockaddr *dst) {
 }
 
 
-  /* int coap_read(coap_context_t *ctx, struct sockaddr_in6 src, */
-  /* 		 jbyteArray receivedData, int bytes_read) { */
+  int coap_read_swig(coap_context_t *ctx, struct sockaddr_in6 src,
+  		 jbyteArray receivedData, int bytes_read) {
 
-  /*   static char buf[COAP_MAX_PDU_SIZE]; */
-  /*   coap_hdr_t *pdu = (coap_hdr_t *)buf; */
+    static char buf[COAP_MAX_PDU_SIZE];
+    coap_hdr_t *pdu = (coap_hdr_t *)buf;
 
-  /*   coap_address_t /\*src, *\/dst; // TODO: src is not sockaddr_in6 anymore */
-  /*   coap_queue_t *node; */
+    coap_address_t /*src, */dst; // TODO: src is not sockaddr_in6 anymore
+    coap_queue_t *node;
 
-  /*   //coap_address_init(&src); */
+    //coap_address_init(&src);
 
-  /*   jbyte *bytes = (*jenv)->GetByteArrayElements(jenv, receivedData, NULL); */
-  /*   memcpy( buf, bytes, bytes_read ); //TODO: check: sizeof(buf) or bytes_read? */
+    jbyte *bytes = (*jenv)->GetByteArrayElements(jenv, receivedData, NULL);
+    memcpy( buf, bytes, bytes_read ); //TODO: check: sizeof(buf) or bytes_read?
 
-  /*   if ( bytes_read < 0 ) { */
-  /*     warn("coap_read: recvfrom"); */
-  /*     return -1; */
-  /*   } */
+    if ( bytes_read < 0 ) {
+      warn("coap_read: recvfrom");
+      return -1;
+    }
 
-  /*   if ( (size_t)bytes_read < sizeof(coap_hdr_t)) { */
-  /*     debug("coap_read: discarded invalid frame (too small)\n" ); */
-  /*     return -1; */
-  /*   } */
+    if ( (size_t)bytes_read < sizeof(coap_hdr_t)) {
+      debug("coap_read: discarded invalid frame (too small)\n" );
+      return -1;
+    }
 
-  /*   if ( pdu->version != COAP_DEFAULT_VERSION ) { */
-  /*     debug("coap_read: unknown protocol version\n" ); */
-  /*     return -1; */
-  /*   } */
+    if ( pdu->version != COAP_DEFAULT_VERSION ) {
+      debug("coap_read: unknown protocol version\n" );
+      return -1;
+    }
 
-  /*   node = coap_new_node(); */
-  /*   if ( !node ) { */
-  /*     return -1; */
-  /*   } */
+    node = coap_new_node();
+    if ( !node ) {
+      return -1;
+    }
 
-  /*   node->pdu = coap_pdu_init(0, 0, 0, bytes_read); */
-  /*   if ( !node->pdu ) */
-  /*     goto error; */
+    node->pdu = coap_pdu_init(0, 0, 0, bytes_read);
+    if ( !node->pdu )
+      goto error;
 
-  /*   coap_ticks( &node->t ); */
-  /*   memcpy(&node->local, &dst, sizeof(coap_address_t)); */
-  /*   memcpy(&node->remote, &src, sizeof(coap_address_t)); */
+    coap_ticks( &node->t );
+    memcpy(&node->local, &dst, sizeof(coap_address_t));
+    memcpy(&node->remote, &src, sizeof(coap_address_t));
 
-  /*   /\* "parse" received PDU by filling pdu structure *\/ */
-  /*   memcpy( node->pdu->hdr, buf, bytes_read ); */
-  /*   node->pdu->length = bytes_read; */
+    /* "parse" received PDU by filling pdu structure */
+    memcpy( node->pdu->hdr, buf, bytes_read );
+    node->pdu->length = bytes_read;
 
-  /*   /\* finally calculate beginning of data block *\/ */
-  /*   { */
-  /*     coap_opt_t *opt = options_start(node->pdu); */
-  /*     unsigned char cnt = node->pdu->hdr->optcnt; */
+    if (!coap_pdu_parse((unsigned char *)buf, bytes_read, node->pdu)) {
+      warn("discard malformed PDU");
+      goto error;
+    }
 
-  /*     /\* Note that we cannot use the official options iterator here as */
-  /*      * it eats up the fence posts. *\/ */
-  /*     while (cnt && opt) { */
-  /* 	if ((unsigned char *)node->pdu->hdr + node->pdu->max_size <= opt) { */
-  /* 	  if (node->pdu->hdr->type == COAP_MESSAGE_CON || */
-  /* 	      node->pdu->hdr->type == COAP_MESSAGE_NON) { */
-  /* 	    coap_send_message_type(ctx, &node->remote, node->pdu, */
-  /* 				   COAP_MESSAGE_RST); */
-  /* 	    debug("sent RST on malformed message\n"); */
-  /* 	  } else { */
-  /* 	    debug("dropped malformed message\n"); */
-  /* 	} */
-  /* 	  goto error; */
-  /* 	} */
+    /* and add new node to receive queue */
+    coap_transaction_id(&node->remote, node->pdu, &node->id);
+    coap_insert_node(&ctx->recvqueue, node, _order_timestamp);
 
-  /* 	if (node->pdu->hdr->optcnt == COAP_OPT_LONG) { */
-  /* 	  if (*opt == COAP_OPT_END) { */
-  /* 	    ++opt; */
-  /* 	    break; */
-  /* 	  } */
-  /* 	} else { */
-  /* 	  --cnt; */
-  /* 	} */
-  /* 	opt = options_next(opt); */
-  /*     } */
+    (*jenv)->ReleaseByteArrayElements(jenv, receivedData, bytes, JNI_ABORT);
 
-  /*     node->pdu->data = (unsigned char *)opt; */
-  /*   } */
+    /*
+    static char addr[INET6_ADDRSTRLEN];
+    if ( inet_ntop(src.sin6_family, &src.sin6_addr, addr, INET6_ADDRSTRLEN) == 0 ) {
+      //printf("coap_read: inet_ntop failed");
+    } else {
+      //printf("** received from [%s]:%d:\n  ",addr,ntohs(src.sin6_port));
+    }
+    */
+    coap_show_pdu( node->pdu );
 
-  /*   /\* and add new node to receive queue *\/ */
-  /*   coap_transaction_id(&node->remote, node->pdu, &node->id); */
-  /*   coap_insert_node(&ctx->recvqueue, node, _order_timestamp); */
-
-  /*   (*jenv)->ReleaseByteArrayElements(jenv, receivedData, bytes, JNI_ABORT); */
-
-  /*   /\* */
-  /*   static char addr[INET6_ADDRSTRLEN]; */
-  /*   if ( inet_ntop(src.sin6_family, &src.sin6_addr, addr, INET6_ADDRSTRLEN) == 0 ) { */
-  /*     //printf("coap_read: inet_ntop failed"); */
-  /*   } else { */
-  /*     //printf("** received from [%s]:%d:\n  ",addr,ntohs(src.sin6_port)); */
-  /*   } */
-  /*   *\/ */
-  /*   coap_show_pdu( node->pdu ); */
-
-  /*   return 0; */
-  /* error: */
-  /*   coap_delete_node(node); */
-  /*   return -1; */
-  /* } */
+    return 0;
+  error:
+    /* FIXME: send back RST? */
+    coap_delete_node(node);
+    return -1;
+  }
 
  str set_str_s(str strobj, jstring jstr, jint len) {
    //char *coap_char = coap_malloc(strobj.length+1);
@@ -1035,7 +1007,7 @@ jstring get_addr(struct sockaddr_in6 src);
 jint get_port(struct sockaddr_in6 src);
 jbyteArray get_bytes(coap_pdu_t pdu);
 //void coap_read(coap_context_t *ctx);
-//void coap_read(coap_context_t *ctx, struct sockaddr_in6 src, jbyteArray receivedData, int length);
+void coap_read_swig(coap_context_t *ctx, struct sockaddr_in6 src, jbyteArray receivedData, int length);
 void sockaddr_in6_free(struct sockaddr_in6 *p);
 void coap_send_impl(coap_context_t *ctx, const struct sockaddr_in6 *dst, coap_pdu_t *pdu, int free_pdu);
 

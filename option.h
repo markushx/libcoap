@@ -1,7 +1,7 @@
 /*
  * option.h -- helpers for handling options in CoAP PDUs
  *
- * Copyright (C) 2010,2011 Olaf Bergmann <bergmann@tzi.org>
+ * Copyright (C) 2010-2013 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
  * README for terms of use. 
@@ -26,38 +26,51 @@
 typedef unsigned char coap_opt_t;
 #define PCHAR(p) ((coap_opt_t *)(p))
 
-#define COAP_OPT_ISEXTENDED(opt) ((*PCHAR(opt) & 0x0f) == 0x0f)
+/** Representation of CoAP options. */
+typedef struct {
+  unsigned short delta;
+  size_t length;
+  unsigned char *value;
+} coap_option_t;
 
-/* these macros should be used to access fields from coap_opt_t */
-#define COAP_OPT_DELTA(opt) (*PCHAR(opt) >> 4)
-#define COAP_OPT_SETDELTA(opt,val)			\
-  (*PCHAR(opt) = (*PCHAR(opt) & 0x0f) | ((val) << 4))
+/**
+ * Parses the option pointed to by @p opt into @p result. This
+ * function returns the number of bytes that have been parsed, or @c 0
+ * on error. An error is signaled when illegal delta or length values
+ * are encountered or when option parsing would result in reading past
+ * the option (i.e. beyond opt + length). 
+ *
+ * @param opt    The beginning of the option to parse.
+ * @param length The maximum length of @p opt.
+ * @param result A pointer to the coap_option_t structure that is
+ *               filled with actual values iff coap_opt_parse() > 0.
+ * @return The number of bytes parsed or @c 0 on error.
+ */
+size_t coap_opt_parse(const coap_opt_t *opt, size_t length, 
+		      coap_option_t *result);
 
-#define COAP_OPT_LENGTH(opt)					\
-  ((unsigned int)(COAP_OPT_ISEXTENDED(opt)			\
-		  ? (*(PCHAR(opt) + 1) + 15)			\
-		  : (*PCHAR(opt) & 0x0f)))
+/**
+ * Returns the size of the given option, taking into account a
+ * possible option jump.
+ *
+ * @param opt An option jump or the beginning of the option.
+ * @return The number of bytes between @p opt and the end of
+ *         the option starting at @p opt. In case of an error,
+ *         this function returns @c 0 as options need at least
+ *         one byte storage space.
+ */
+size_t coap_opt_size(const coap_opt_t *opt);
 
-#define COAP_OPT_SETLENGTH(opt,val)					\
-  if ((val) < 15)							\
-    *PCHAR(opt) = ((*PCHAR(opt) & 0xf0) | ((val) & 0x0f));		\
-  else {								\
-    *PCHAR(opt) |= 0x0f;						\
-    *(PCHAR(opt) + 1) = ((val) - 15) & 0xff;				\
-  }
-
-#define COAP_OPT_VALUE(opt)				\
-  (PCHAR(opt) + (COAP_OPT_ISEXTENDED(opt) ? 2 : 1))
-
-/* Do not forget to adjust this when coap_opt_t is changed! */
-#define COAP_OPT_SIZE(opt) ( COAP_OPT_LENGTH(opt) + ( COAP_OPT_ISEXTENDED(opt) ? 2: 1 ) )
+/** @deprecated { Use coap_opt_size() instead. } */
+#define COAP_OPT_SIZE(opt) coap_opt_size(opt)
 
 /**
  * Calculates the beginning of the PDU's option section.
- * @hideinitializer
+ * 
+ * @param pdu The PDU containing the options.
+ * @return A pointer to the first option if available, or @c NULL otherwise.
  */
-#define options_start(p) \
-  ((coap_opt_t *) ( (unsigned char *)p->hdr + sizeof (coap_hdr_t) ))
+coap_opt_t *options_start(coap_pdu_t *pdu);
 
 /**
  * Interprets @p opt as pointer to a CoAP option and advances to
@@ -80,7 +93,7 @@ typedef unsigned char coap_opt_t;
 typedef unsigned char coap_opt_filter_t[(COAP_MAX_OPT >> 3) + 1];
 
 /** Pre-defined filter that includes all options. */
-extern const coap_opt_filter_t COAP_OPT_ALL;
+#define COAP_OPT_ALL NULL
 
 /** 
  * Clears filter @p f.
@@ -140,7 +153,8 @@ coap_option_getb(const coap_opt_filter_t filter, unsigned char type) {
 /** 
  * Iterator to run through PDU options. This object must be
  * initialized with coap_option_iterator_init(). Call
- * coap_option_next() to walk through the list of options.
+ * coap_option_next() to walk through the list of options until
+ * coap_option_next() returns @c NULL.
  *
  * @code
  * coap_opt_t *option;
@@ -153,17 +167,20 @@ coap_option_getb(const coap_opt_filter_t filter, unsigned char type) {
  * @endcode
  */
 typedef struct {
-  unsigned char n;		/**< number of the current option */
-  unsigned char optcnt;		/**< number of options in the pdu */
+  size_t length;		/**< remaining length of PDU */
   unsigned short type;		/**< decoded option type */
+  unsigned int bad:1;		/**< iterator object is ok if not set */
+  unsigned int filtered:1;	/**< denotes whether or not filter is used */
+  coap_opt_t *next_option;	/**< pointer to the unparsed next option */
   coap_opt_filter_t filter;	/**< option filter */
-  coap_opt_t *option;		/**< pointer to the current option */
 } coap_opt_iterator_t;
 
 /** 
  * Initializes the given option iterator @p oi to point to the
  * beginning of the @p pdu's option list. This function returns @p oi
  * on success, @c NULL otherwise (i.e. when no options exist).
+ * Note that a length check on the option list must be performed before
+ * coap_option_iterator_init() is called.
  * 
  * @param pdu  The PDU the options of which should be walked through.
  * @param oi   An iterator object that will be initilized.
@@ -216,6 +233,89 @@ coap_opt_t *coap_option_next(coap_opt_iterator_t *oi);
 coap_opt_t *coap_check_option(coap_pdu_t *pdu, 
 			      unsigned char type, 
 			      coap_opt_iterator_t *oi);
+
+/**
+ * Encodes the given delta and length values into @p opt. This
+ * function returns the number of bytes that were required to encode
+ * @p delta and @p length or @c 0 on error. Note that the result
+ * indicates by how many bytes @p opt must be advanced to encode the
+ * option value.
+ *
+ * @param opt    The option buffer space where @p delta and @p length are 
+ *               written
+ * @param maxlen The maximum length of @p opt
+ * @param delta The actual delta value to encode.
+ * @param length The actual length value to encode.
+ * @return The number of bytes used or @c 0 on error.
+ */
+size_t coap_opt_setheader(coap_opt_t *opt, size_t maxlen, 
+			  unsigned short delta, size_t length);
+
+/**
+ * Encodes option with given @p delta into @p opt. This function returns
+ * the number of bytes written to @p opt or @c 0 on error. This happens
+ * especially when @p opt does not provide sufficient space to store
+ * the option value, delta, and option jumps when required.
+ *
+ * @param opt   The option buffer space where @p val is written
+ * @param n     Maximum length of @p opt.
+ * @param delta The option delta.
+ * @param val   The option value to copy into @p opt.
+ * @param len   The actual length of @p val.
+ * @return The number of bytes that have been written to @p opt or
+ *         @c 0 on error. The return value will always be less than @p n.
+ */
+size_t coap_opt_encode(coap_opt_t *opt, size_t n, unsigned short delta,
+		       const unsigned char *val, size_t length);
+
+/**
+ * Decodes the delta value of the next option. This function returns
+ * the number of bytes read or @c 0 on error. The caller of this
+ * function must ensure that it does not read over the boundaries
+ * of @p opt (e.g. by calling coap_opt_check_delta().
+ *
+ * @param opt The option to examine
+ * @return The number of bytes read or @c 0 on error.
+ */
+unsigned short coap_opt_delta(const coap_opt_t *opt);
+
+/** @deprecated { Use coap_opt_delta() instead. } */
+#define COAP_OPT_DELTA(opt) coap_opt_delta(opt)
+
+/** @deprecated { Use coap_opt_encode() instead. } */
+#define COAP_OPT_SETDELTA(opt,val)			\
+  coap_opt_encode((opt), COAP_MAX_PDU_SIZE, (val), NULL, 0)
+
+/**
+ * Returns the length of the given option. @p opt must point to an
+ * option jump or the beginning of the option. This function returns
+ * @c 0 when @p opt is not an option or the actual length of @p opt
+ * (which can be @c 0 as well).
+ *
+ * @note {The rationale for using @c 0 in case of an error is that in
+ * most contexts, the result of this function is used to skip the next
+ * coap_opt_length() bytes. }
+ *
+ * @param opt  The option whose length should be returned.
+ * @return The option's length or @c 0 when undefined.
+ */
+unsigned short coap_opt_length(const coap_opt_t *opt);
+
+/** @deprecated { Use coap_opt_length() instead. } */
+#define COAP_OPT_LENGTH(opt) coap_opt_length(opt)
+
+/**
+ * Returns a pointer to the value of the given option. @p opt must
+ * point to an option jump or the beginning of the option. This 
+ * function returns @c NULL if @p opt is not a valid option.
+ *
+ * @param opt  The option whose value should be returned.
+ * @return A pointer to the option value or @c NULL on error.
+ */
+unsigned char *coap_opt_value(coap_opt_t *opt);
+
+/** @deprecated { Use coap_opt_value() instead. } */
+#define COAP_OPT_VALUE(opt) coap_opt_value((coap_opt_t *)opt)
 
 /** @} */
 

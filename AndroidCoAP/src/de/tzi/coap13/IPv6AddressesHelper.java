@@ -1,4 +1,4 @@
-package de.tzi.coap08;
+package de.tzi.coap13;
 
 import java.io.BufferedReader;
 import java.io.IOException;

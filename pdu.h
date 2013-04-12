@@ -1,7 +1,7 @@
 /* pdu.h -- CoAP message structure
  *
  * Copyright (C) 2010--2012 Olaf Bergmann <bergmann@tzi.org>
- * 
+ *
  * This file is part of the CoAP library libcoap. Please see
  * README for terms of use. 
  */
@@ -50,35 +50,33 @@
 
 /* CoAP option types (be sure to update check_critical when adding options */
 
-#define COAP_OPTION_CONTENT_TYPE  1 /* C, 8-bit uint, 1-2 B, - */
-#define COAP_OPTION_MAXAGE        2 /* E, variable length, 1--4 B, 60 Seconds */
-#define COAP_OPTION_PROXY_URI     3 /* C, String, 1-270 B, may occur more than once */
-#define COAP_OPTION_ETAG          4 /* E, opaque, 0-8 B, (none) */
-#define COAP_OPTION_URI_HOST      5 /* C, String, 1-270 B, destination address */
-#define COAP_OPTION_LOCATION_PATH 6 /* E, String, 1-270 B, - */
-#define COAP_OPTION_URI_PORT      7 /* C, String, 1-270 B, destination port */
-#define COAP_OPTION_LOCATION_QUERY 8 /*  */
-#define COAP_OPTION_URI_PATH      9 /* C, String, 1-270 B, - (may occur multiple times) */
-#define COAP_OPTION_TOKEN        11 /* C, Sequence of Bytes, 1-8 B, empty */
-#define COAP_OPTION_ACCEPT       12 /* E, uint,   0-2 B, (none) */
-#define COAP_OPTION_IF_MATCH     13 /* C, opaque, 0-8 B, (none) */
-#define COAP_OPTION_URI_QUERY    15 /* C, String, 1-270 B, "" */
-#define COAP_OPTION_IF_NONE_MATCH 21 /* C, (none), 0 B, (none) */
+#define COAP_OPTION_IF_MATCH      1 /* C, opaque, 0-8 B, (none) */
+#define COAP_OPTION_URI_HOST      3 /* C, String, 1-255 B, destination address */
+#define COAP_OPTION_ETAG          4 /* E, opaque, 1-8 B, (none) */
+#define COAP_OPTION_IF_NONE_MATCH 5 /* empty, 0 B, (none) */
+#define COAP_OPTION_URI_PORT      7 /* C, uint, 0-2 B, destination port */
+#define COAP_OPTION_LOCATION_PATH 8 /* E, String, 0-255 B, - */
+#define COAP_OPTION_URI_PATH     11 /* C, String, 0-255 B, (none) */
+#define COAP_OPTION_CONTENT_FORMAT 12 /* E, uint, 0-2 B, (none) */
+#define COAP_OPTION_CONTENT_TYPE COAP_OPTION_CONTENT_FORMAT
+#define COAP_OPTION_MAXAGE       14 /* E, uint, 0--4 B, 60 Seconds */
+#define COAP_OPTION_URI_QUERY    15 /* C, String, 1-255 B, (none) */
+#define COAP_OPTION_ACCEPT       16 /* E, uint,   0-2 B, (none) */
+#define COAP_OPTION_LOCATION_QUERY 20 /* E, String,   0-255 B, (none) */
+#define COAP_OPTION_PROXY_URI    35 /* C, String, 1-1034 B, (none) */
+#define COAP_OPTION_PROXY_SCHEME 39 /* C, String, 1-255 B, (none) */
 
-/* option types from draft-hartke-coap-observe-01 */
+/* option types from draft-hartke-coap-observe-07 */
 
-#define COAP_OPTION_SUBSCRIPTION 10 /* E, uint, 0-2 B, - */
+#define COAP_OPTION_OBSERVE       6 /* E, empty/uint, 0 B/0-2 B, (none) */
+#define COAP_OPTION_SUBSCRIPTION  COAP_OPTION_OBSERVE
 
 /* selected option types from draft-core-block-04 */
 
-#define COAP_OPTION_BLOCK1       19 /* C, unsigned integer, 1--3 B, 0 */
-#define COAP_OPTION_BLOCK2       17 /* C, unsigned integer, 1--3 B, 0 */
+#define COAP_OPTION_BLOCK2       23 /* C, uint, 0--3 B, (none) */
+#define COAP_OPTION_BLOCK1       27 /* C, uint, 0--3 B, (none) */
 
-/* selected option types from draft-bormann-coap-misc-04 */
-
-#define COAP_OPTION_NOOP         14 /* no-op for fenceposting */
-
-#define COAP_MAX_OPT             21 /**< the highest option number we know */
+#define COAP_MAX_OPT             63 /**< the highest option number we know */
 
 /* CoAP result codes (HTTP-Code / 100 * 40 + HTTP-Code % 100) */
 
@@ -113,9 +111,8 @@ char *coap_response_phrase(unsigned char code);
 #endif /* SHORT_ERROR_RESPONSE */
 
 /* The following definitions exist for backwards compatibility */
-/* The macro COAP_RESPONSE_CODE is not available in SWIG. */
 #if 0 /* this does not exist any more */
-#define COAP_RESPONSE_100       40   /* 100 Continue */
+#define COAP_RESPONSE_100      40 /* 100 Continue */
 #endif
 #define COAP_RESPONSE_200      COAP_RESPONSE_CODE(200)  /* 2.00 OK */
 #define COAP_RESPONSE_201      COAP_RESPONSE_CODE(201)  /* 2.01 Created */
@@ -136,8 +133,8 @@ char *coap_response_phrase(unsigned char code);
 #define COAP_RESPONSE_503      COAP_RESPONSE_CODE(503)  /* 5.03 Service Unavailable */
 #define COAP_RESPONSE_504      COAP_RESPONSE_CODE(504)  /* 5.04 Gateway Timeout */
 #if 0  /* these response codes do not have a valid code any more */
-#define COAP_RESPONSE_X_240    240   /* Token Option required by server */
-#define COAP_RESPONSE_X_241    241   /* Uri-Authority Option required by server */
+#  define COAP_RESPONSE_X_240    240   /* Token Option required by server */
+#  define COAP_RESPONSE_X_241    241   /* Uri-Authority Option required by server */
 #endif
 #define COAP_RESPONSE_X_242    COAP_RESPONSE_CODE(402)  /* Critical Option not supported */
 
@@ -157,24 +154,26 @@ char *coap_response_phrase(unsigned char code);
 
 /* CoAP transaction id */
 /*typedef unsigned short coap_tid_t; */
-typedef int coap_tid_t; 
+typedef int coap_tid_t;
 #define COAP_INVALID_TID -1
 
 #ifdef WORDS_BIGENDIAN
 typedef struct {
   unsigned int version:2;	/* protocol version */
   unsigned int type:2;		/* type flag */
-  unsigned int optcnt:4;	/* number of options following the header */
+  unsigned int token_length:4;	/* length of Token */
   unsigned int code:8;	        /* request method (value 1--10) or response code (value 40-255) */
-  unsigned short id;		/* transaction id */
+  unsigned short id;		/* message id */
+  unsigned char token[];	/* the actual token, if any */
 } coap_hdr_t;
 #else
 typedef struct {
-  unsigned int optcnt:4;	/* number of options following the header */
+  unsigned int token_length:4;	/* length of Token */
   unsigned int type:2;		/* type flag */
   unsigned int version:2;	/* protocol version */
   unsigned int code:8;	        /* request method (value 1--10) or response code (value 40-255) */
   unsigned short id;		/* transaction id (network byte order!) */
+  unsigned char token[];	/* the actual token, if any */
 } coap_hdr_t;
 #endif
 
@@ -188,9 +187,11 @@ typedef struct {
 
 #define COAP_OPT_END 0xF0	/* end marker */
 
+#define COAP_PAYLOAD_START 0xFF	/* payload marker */
+
 /**
  * Structures for more convenient handling of options. (To be used with ordered
- * coap_list_t.) The option's data will be added to the end of the coap_option 
+ * coap_list_t.) The option's data will be added to the end of the coap_option
  * structure (see macro COAP_OPTION_DATA).
  */
 typedef struct {
@@ -205,11 +206,12 @@ typedef struct {
 /** Header structure for CoAP PDUs */
 
 typedef struct {
-  size_t max_size;			/**< allocated storage for options and data */
+  size_t max_size;	/**< allocated storage for options and data */
+
   coap_hdr_t *hdr;
-  unsigned short length;	/* PDU length (including header, options, data)  */
-  coap_list_t *options;		/* parsed options */
-  unsigned char *data;		/* payload */
+  unsigned short max_delta;	/**< highest option number */
+  unsigned short length;	/**< PDU length (including header, options, data)  */
+  unsigned char *data;		/**< payload */
 } coap_pdu_t;
 
 /** Options in coap_pdu_t are accessed with the macro COAP_OPTION. */
@@ -252,16 +254,49 @@ coap_pdu_t *coap_new_pdu();
 
 void coap_delete_pdu(coap_pdu_t *);
 
-/** 
- * Adds option of given type to pdu that is passed as first parameter. coap_add_option() 
- * destroys the PDU's data, so coap_add_data must be called after all options have been
- * added.
+/**
+ * Parses @p data into the CoAP PDU structure given in @p result. This
+ * function returns @c 0 on error or a number greater than zero on
+ * success.
+ *
+ * @param data   The raw data to parse as CoAP PDU
+ * @param length The actual size of @p data
+ * @param result The PDU structure to fill. Note that the structure must
+ *               provide space for at least @p length bytes to hold the
+ *               entire CoAP PDU.
+ * @return A value greater than zero on success or @c 0 on error.
  */
-int coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const unsigned char *data);
+int coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *result);
 
-/** 
- * Adds given data to the pdu that is passed as first parameter. Note that the PDU's 
- * data is destroyed by coap_add_option().
+/**
+ * Adds token of length @p len to @p pdu. Adding the token destroys
+ * any following contents of the pdu. Hence options and data must be
+ * added after coap_add_token() has been called. In @p pdu, length is
+ * set to @p len + @c 4, and max_delta is set to @c 0.  This funtion
+ * returns @c 0 on error or a value greater than zero on success.
+ *
+ * @param pdu  The PDU where the token is to be added.
+ * @param len  The length of the new token.
+ * @param data The token to add.
+ * @return A value greater than zero on success, or @c 0 on error.
+ */
+int coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data);
+
+/**
+ * Adds option of given type to pdu that is passed as first
+ * parameter. coap_add_option() destroys the PDU's data, so
+ * coap_add_data() must be called after all options have been added.
+ * As coap_add_token() destroys the options following the token,
+ * the token must be added before coap_add_option() is called.
+ * This function returns the number of bytes written or @c 0 on error.
+ */
+size_t coap_add_option(coap_pdu_t *pdu, unsigned short type, 
+		       unsigned int len, const unsigned char *data);
+
+/**
+ * Adds given data to the pdu that is passed as first parameter. Note
+ * that the PDU's data is destroyed by coap_add_option(). coap_add_data()
+ * must be called only once per PDU, otherwise the result is undefined.
  */
 int coap_add_data(coap_pdu_t *pdu, unsigned int len, const unsigned char *data);
 
@@ -272,7 +307,7 @@ int coap_add_data(coap_pdu_t *pdu, unsigned int len, const unsigned char *data);
  */
 int coap_get_data(coap_pdu_t *pdu, size_t *len, unsigned char **data);
 
-#if 0
+#ifdef JAVA
 /* I don't think this is needed */
 
 /**

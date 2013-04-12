@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-  <string name="app_name">Android CoAP 08</string>
-  <string name="app_name_client">CoAP Client 08</string>
-  <string name="app_name_server">CoAP Server 08</string>
+  <string name="app_name">Android CoAP 13</string>
+  <string name="app_name_client">CoAP Client 13</string>
+  <string name="app_name_server">CoAP Server 13</string>
       
   <string name="run">Run</string>
   <string name="stop">Stop</string>
